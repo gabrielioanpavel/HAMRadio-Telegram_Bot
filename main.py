@@ -4,11 +4,12 @@ import logging
 import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from logging_config import setup_logger
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] at %(asctime)s - %(message)s')
+logger = setup_logger()
 
-def sessionRetries(retries=3, backoff_factor=0.5, status_forcelist=(500, 502, 504)):
+# Function for retrying to connect to the API in the case of failure
+def sessionRetries(retries=3, backoff_factor=1, status_forcelist=(500, 502, 504)):
     session = requests.Session()
     retry = Retry(total=retries, read=retries, connect=retries, backoff_factor=backoff_factor, status_forcelist=status_forcelist)
     adapter = HTTPAdapter(max_retries=retry)
@@ -16,7 +17,7 @@ def sessionRetries(retries=3, backoff_factor=0.5, status_forcelist=(500, 502, 50
     session.mount('https://', adapter)
     return session
 
-# The API gives a list of dictionaries
+# Function to fetch the data given by the API
 def fetchData(url):
     session = sessionRetries()
 
@@ -44,8 +45,13 @@ url = 'https://api.pota.app/spot/'
 data = fetchData(url)
 if data:
     logger.info('Fetching successful.')
+
+    # Construction of DataFrame
     df = pd.DataFrame(data)
     df.drop(['spotId', 'spotTime', 'mode', 'spotter', 'comments'], axis=1, inplace=True)
+    mask = df['activator'].str.startswith('YO')
+    df = df[mask].reset_index(drop=True)
 else:
-    logging.error('Failed to fetch data.')
-logging.info('Operation complete.')
+    logger.error('Failed to fetch data.')
+
+logger.info('Operation complete.')
