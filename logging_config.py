@@ -1,14 +1,14 @@
 import logging
 
 class NoInfoFilter(logging.Filter):
-    def filter(self, record):
+    def filter(self, record) -> bool:
         return record.levelno != logging.INFO
     
 class OnlyInfoFilter(logging.Filter):
-    def filter(self, record):
+    def filter(self, record) -> bool:
         return record.levelno == logging.INFO
 
-def setup_logger():
+def setup_logger() -> logging.Logger:
     logger = logging.getLogger('BotLogger')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(levelname)s] at %(asctime)s - %(message)s')

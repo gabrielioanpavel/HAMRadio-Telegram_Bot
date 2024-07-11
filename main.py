@@ -9,7 +9,7 @@ from logging_config import setup_logger
 logger = setup_logger()
 
 # Function for retrying to connect to the API in the case of failure
-def sessionRetries(retries=3, backoff_factor=1, status_forcelist=(500, 502, 504)):
+def sessionRetries(retries=3, backoff_factor=1, status_forcelist=(500, 502, 504)) -> requests.sessions.Session:
     session = requests.Session()
     retry = Retry(total=retries, read=retries, connect=retries, backoff_factor=backoff_factor, status_forcelist=status_forcelist)
     adapter = HTTPAdapter(max_retries=retry)
@@ -18,13 +18,11 @@ def sessionRetries(retries=3, backoff_factor=1, status_forcelist=(500, 502, 504)
     return session
 
 # Function to fetch the data given by the API
-def fetchData(url):
+def fetchData(url: str) -> dict:
     session = sessionRetries()
-
     try:
         response = session.get(url)
         response.raise_for_status()
-
         data = response.json()
         return data
     except requests.exceptions.ConnectionError as e:
@@ -55,3 +53,5 @@ else:
     logger.error('Failed to fetch data.')
 
 logger.info('Operation complete.')
+
+#TODO: Finish the script so it can be used by the bot

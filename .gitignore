@@ -26,6 +26,7 @@ __pycache__/
 *.log
 *.sql
 *.sqlite
+*.env
 log.txt
 
 # OS generated files #
