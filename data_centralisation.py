@@ -49,7 +49,7 @@ def centralise():
 
         # Construction of DataFrame
         df = pd.DataFrame(data)
-        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'comments', 'parkName', 'invalid', 'grid4', 'grid6', 'count', 'expire'], axis=1, inplace=True)
+        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'parkName', 'invalid', 'grid4', 'grid6', 'count', 'expire'], axis=1, inplace=True)
 
         # This is a filter so that only Romanian activators are kept in the DataFrame
         mask = df['activator'].str.startswith('YO') | (df['activator'].str.startswith('LB9HI'))

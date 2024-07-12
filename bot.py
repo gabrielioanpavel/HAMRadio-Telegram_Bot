@@ -67,11 +67,13 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
                 mode = row['mode']
                 name = row['name']
                 locationDesc = row['locationDesc']
+                comment = row['comments']
                 urlPark, urlActivator = get_urls(row['reference'], row['activator'])
                 await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
                                                 f"Frequency: <b>{frequency}</b>\n"
                                                 f"Mode: <b>{mode}</b>\n"
-                                                f"Region: <b>{locationDesc}</b>", parse_mode='HTML')
+                                                f"Region: <b>{locationDesc}</b>"
+                                                f"Info: <b>{comment}</b>", parse_mode='HTML')
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
