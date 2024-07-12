@@ -40,8 +40,8 @@ def fetchData(url: str) -> dict:
 
 # Function that takes the fetched data and stores it into a Pandas DataFrame, keeping only YO activators
 def centralise():
-    logger.info('Fetching data from [https://api.pota.app/spot/]...')
-    url = 'https://api.pota.app/spot/'
+    logger.info('Fetching data from [https://api.pota.app/spot/activator]...')
+    url = 'https://api.pota.app/spot/activator'
     data = fetchData(url)
     df = pd.DataFrame
     if data:
@@ -49,7 +49,7 @@ def centralise():
 
         # Construction of DataFrame
         df = pd.DataFrame(data)
-        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'comments'], axis=1, inplace=True)
+        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'comments', 'parkName', 'invalid', 'grid4', 'grid6', 'count', 'expire'], axis=1, inplace=True)
         mask = df['activator'].str.startswith('YO')
         df = df[mask].reset_index(drop=True)
         df.drop_duplicates(inplace=True)
