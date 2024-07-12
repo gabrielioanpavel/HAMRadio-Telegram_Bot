@@ -13,6 +13,13 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("Token not provided")
 BOT_USERNAME = '@infoPOTA_bot'
+if not BOT_USERNAME:
+    raise ValueError("Bot username not provided")
+str(BOT_USERNAME)
+TOPIC_ID = 43
+if not TOPIC_ID:
+    raise ValueError("Topic ID not provided")
+int(TOPIC_ID)
 
 def get_urls(ref: str, act: str):
     urlPark = 'https://pota.app/#/park/' + ref
@@ -30,35 +37,41 @@ def get_urls(ref: str, act: str):
 # Commands
 
 async def start_command(update: Update, conext: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Hello! This is a bot that provides information related to POTA activations.')
+    if update.message.message_thread_id == TOPIC_ID:
+        await update.message.reply_text('Hello! This is a bot that provides information related to POTA activations.')
 
 async def help_command(update: Update, conext: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
-                                    "-- /start - Starts the bot\n"
-                                    "-- /help - Provides a list of usable commands\n"
-                                    "-- /get_activators - Provides a list of the most recent spotted activators",
-                                    parse_mode='HTML')
+    if update.message.message_thread_id == TOPIC_ID:
+        await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
+                                        "-- /start - Starts the bot\n"
+                                        "-- /help - Provides a list of usable commands\n"
+                                        "-- /get_activators - Provides a list of the most recent spotted activators",
+                                        parse_mode='HTML')
 
 async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    ok, df = dc.centralise()
-    if ok == 0:
-        await update.message.reply_text('An error occoured.')
-        return
-    if df.empty:
-        await update.message.reply_text('No activators found.')
-    else:
-        for index, row in df.iterrows():
-            activator = row['activator']
-            frequency = row['frequency']
-            reference = row['reference']
-            mode = row['mode']
-            name = row['name']
-            locationDesc = row['locationDesc']
-            urlPark, urlActivator = get_urls(row['reference'], row['activator'])
-            await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
-                                            f"Frequency: <b>{frequency}</b>\n"
-                                            f"Mode: <b>{mode}</b>\n"
-                                            f"Region: <b>{locationDesc}</b>", parse_mode='HTML')
+    if update.message.message_thread_id == TOPIC_ID:
+        if update.effective_chat.type == 'private':
+            await update.message.reply_text('Bot does not work in private chat.')
+            return
+        ok, df = dc.centralise()
+        if ok == 0:
+            await update.message.reply_text('An error occoured.')
+            return
+        if df.empty:
+            await update.message.reply_text('No activators found.')
+        else:
+            for index, row in df.iterrows():
+                activator = row['activator']
+                frequency = row['frequency']
+                reference = row['reference']
+                mode = row['mode']
+                name = row['name']
+                locationDesc = row['locationDesc']
+                urlPark, urlActivator = get_urls(row['reference'], row['activator'])
+                await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
+                                                f"Frequency: <b>{frequency}</b>\n"
+                                                f"Mode: <b>{mode}</b>\n"
+                                                f"Region: <b>{locationDesc}</b>", parse_mode='HTML')
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
