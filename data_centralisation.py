@@ -6,7 +6,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from logging_config import setup_logger
 
-logger = setup_logger()
+logger = logging.getLogger('BotLogger')
 
 # Function for retrying to connect to the API in the case of failure
 def sessionRetries(retries=3, backoff_factor=1, status_forcelist=(500, 502, 504)) -> requests.sessions.Session:
@@ -38,20 +38,23 @@ def fetchData(url: str) -> dict:
         logging.error(f'Request exception: {e}')
         return None
 
-logger.info('Fetching data from [https://api.pota.app/spot/]...')
-url = 'https://api.pota.app/spot/'
-data = fetchData(url)
-if data:
-    logger.info('Fetching successful.')
+# Function that takes the fetched data and stores it into a Pandas DataFrame, keeping only YO activators
+def centralise():
+    logger.info('Fetching data from [https://api.pota.app/spot/]...')
+    url = 'https://api.pota.app/spot/'
+    data = fetchData(url)
+    df = pd.DataFrame
+    if data:
+        logger.info('Fetching successful.')
 
-    # Construction of DataFrame
-    df = pd.DataFrame(data)
-    df.drop(['spotId', 'spotTime', 'mode', 'spotter', 'comments'], axis=1, inplace=True)
-    mask = df['activator'].str.startswith('YO')
-    df = df[mask].reset_index(drop=True)
-else:
-    logger.error('Failed to fetch data.')
-
-logger.info('Operation complete.')
-
-#TODO: Finish the script so it can be used by the bot
+        # Construction of DataFrame
+        df = pd.DataFrame(data)
+        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'comments'], axis=1, inplace=True)
+        mask = df['activator'].str.startswith('YO')
+        df = df[mask].reset_index(drop=True)
+        df.drop_duplicates(inplace=True)
+        logger.info('Operation complete.')
+        return (1, df)
+    else:
+        logger.error('Failed to fetch data.')
+        return (0, df)
