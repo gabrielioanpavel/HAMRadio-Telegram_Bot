@@ -52,8 +52,8 @@ def centralise():
         df.drop(['spotId', 'spotTime', 'source', 'spotter', 'comments', 'parkName', 'invalid', 'grid4', 'grid6', 'count', 'expire'], axis=1, inplace=True)
 
         # This is a filter so that only Romanian activators are kept in the DataFrame
-        # mask = df['activator'].str.startswith('YO') | (df['activator'].str.startswith('LB9HI'))
-        # df = df[mask].reset_index(drop=True)
+        mask = df['activator'].str.startswith('YO') | (df['activator'].str.startswith('LB9HI'))
+        df = df[mask].reset_index(drop=True)
 
         df.drop_duplicates(inplace=True)
         logger.info('Operation complete.')
