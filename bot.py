@@ -14,6 +14,19 @@ if not TOKEN:
     raise ValueError("Token not provided")
 BOT_USERNAME = '@infoPOTA_bot'
 
+def get_urls(ref: str, act: str):
+    urlPark = 'https://pota.app/#/park/' + ref
+
+    try:
+        i = act.index('/')
+    except ValueError:
+        pass
+    else:
+        act = act[:i]
+    urlActivator = 'https://www.qrz.com/db/' + act
+
+    return urlPark, urlActivator
+
 # Commands
 
 async def start_command(update: Update, conext: ContextTypes.DEFAULT_TYPE):
@@ -41,11 +54,11 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
             mode = row['mode']
             name = row['name']
             locationDesc = row['locationDesc']
-            await update.message.reply_text(f"<b>[ {activator} ]</b> is now activating park <b>[ {reference} ]</b> - <i>{name}</i>\n\n"
+            urlPark, urlActivator = get_urls(row['reference'], row['activator'])
+            await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
                                             f"Frequency: <b>{frequency}</b>\n"
                                             f"Mode: <b>{mode}</b>\n"
                                             f"Region: <b>{locationDesc}</b>", parse_mode='HTML')
-            #TODO: Add hyperlinks for {activator} and {reference}
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
