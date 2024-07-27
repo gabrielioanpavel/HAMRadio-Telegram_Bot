@@ -4,7 +4,6 @@ import logging
 import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from logging_config import setup_logger
 
 logger = logging.getLogger('BotLogger')
 
@@ -49,10 +48,12 @@ def centralise():
 
         # Construction of DataFrame
         df = pd.DataFrame(data)
-        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'comments', 'parkName', 'invalid', 'grid4', 'grid6', 'count', 'expire'], axis=1, inplace=True)
+        df.drop(['spotId', 'spotTime', 'source', 'spotter', 'parkName', 'invalid', 'grid6', 'count', 'expire'], axis=1, inplace=True)
 
-        # This is a filter so that only Romanian activators are kept in the DataFrame
-        mask = df['activator'].str.startswith('YO')
+        # This is a filter so that only European activators are kept in the DataFrame
+        with open('gridsEU.txt' , 'r') as file:
+            grids = file.read().split()
+        mask = df['grid4'].apply(lambda x: any(x.startswith(grid) for grid in grids))
         df = df[mask].reset_index(drop=True)
 
         df.drop_duplicates(inplace=True)
