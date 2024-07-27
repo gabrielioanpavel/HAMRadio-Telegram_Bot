@@ -9,18 +9,23 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from time import sleep
 
 logger = setup_logger()
+
+logger.info('Loading environmental variables...')
 load_dotenv()
+
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("Token not provided")
-BOT_USERNAME = '@infoPOTA_bot'
+
+BOT_USERNAME = str(os.getenv('BOT_USERNAME'))
 if not BOT_USERNAME:
     raise ValueError("Bot username not provided")
-str(BOT_USERNAME)
-TOPIC_ID = 43
+
+TOPIC_ID = int(os.getenv('TOPIC_ID'))
 if not TOPIC_ID:
     raise ValueError("Topic ID not provided")
-int(TOPIC_ID)
+
+logger.info('Environmental variables loaded successfully.')
 
 def get_urls(ref: str, act: str):
     urlPark = 'https://pota.app/#/park/' + ref
@@ -62,6 +67,7 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text('No activators found.')
         else:
             for index, row in df.iterrows():
+                logger.info('Sending message...')
                 activator = row['activator']
                 frequency = row['frequency']
                 reference = row['reference']
@@ -76,6 +82,7 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
                                                 f"Region: <b>{locationDesc}</b>\n"
                                                 f"Info: <b>{comment}</b>", parse_mode='HTML')
                 sleep(0.5)
+    logger.info('All messages have been sent.')
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
