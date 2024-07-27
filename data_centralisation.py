@@ -2,10 +2,13 @@ import pandas as pd
 import requests
 import logging
 import json
+import os
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from dotenv import load_dotenv
 
 logger = logging.getLogger('BotLogger')
+load_dotenv()
 
 # Function for retrying to connect to the API in the case of failure
 def sessionRetries(retries=3, backoff_factor=1, status_forcelist=(500, 502, 504)) -> requests.sessions.Session:
@@ -51,8 +54,7 @@ def centralise():
         df.drop(['spotId', 'spotTime', 'source', 'spotter', 'parkName', 'invalid', 'grid6', 'count', 'expire'], axis=1, inplace=True)
 
         # This is a filter so that only European activators are kept in the DataFrame
-        with open('gridsEU.txt' , 'r') as file:
-            grids = file.read().split()
+        grids = os.getenv('GRIDS_EU').split()
         mask = df['grid4'].apply(lambda x: any(x.startswith(grid) for grid in grids))
         df = df[mask].reset_index(drop=True)
 
