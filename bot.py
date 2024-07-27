@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from logging_config import setup_logger
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from time import sleep
 
 logger = setup_logger()
 load_dotenv()
@@ -74,6 +75,7 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
                                                 f"Mode: <b>{mode}</b>\n"
                                                 f"Region: <b>{locationDesc}</b>\n"
                                                 f"Info: <b>{comment}</b>", parse_mode='HTML')
+                sleep(0.5)
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
