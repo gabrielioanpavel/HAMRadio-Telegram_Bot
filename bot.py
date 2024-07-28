@@ -27,18 +27,11 @@ if not TOPIC_ID:
 
 logger.info('Environmental variables loaded successfully.')
 
-def get_urls(ref: str, act: str):
-    urlPark = 'https://pota.app/#/park/' + ref
-
-    try:
-        i = act.index('/')
-    except ValueError:
-        pass
-    else:
-        act = act[:i]
-    urlActivator = 'https://www.qrz.com/db/' + act
-
-    return urlPark, urlActivator
+def getTime(ts):
+    i = ts.index('T')
+    date = ts[:i]
+    hour = ts[i+1:]
+    return (date, hour)
 
 # Commands
 
@@ -54,12 +47,12 @@ async def help_command(update: Update, conext: ContextTypes.DEFAULT_TYPE):
                                         "-- /get_activators - Provides a list of the most recent spotted activators",
                                         parse_mode='HTML')
 
-async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def get_POTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
-        ok, df = dc.centralise()
+        ok, df = dc.centralisePOTA()
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
@@ -75,7 +68,10 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
                 name = row['name']
                 locationDesc = row['locationDesc']
                 comment = row['comments']
-                urlPark, urlActivator = get_urls(row['reference'], row['activator'])
+
+                urlPark = 'https://pota.app/#/park/'+ reference
+                urlActivator = 'https://www.qrz.com/db/' + activator
+
                 await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
                                                 f"Frequency: <b>{frequency}</b>\n"
                                                 f"Mode: <b>{mode}</b>\n"
@@ -84,6 +80,37 @@ async def get_activators_command(update: Update, context: ContextTypes.DEFAULT_T
                 sleep(0.5)
     logger.info('All messages have been sent.')
 
+async def get_SOTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.message_thread_id == TOPIC_ID:
+        if update.effective_chat.type == 'private':
+            await update.message.reply_text('Bot does not work in private chat.')
+            return
+        ok, df = dc.centraliseSOTA()
+        if ok == 0:
+            await update.message.reply_text('An error occoured.')
+            return
+        if df.empty:
+            await update.message.reply_text('No activators found.')
+        else:
+            for index, row in df.iterrows():
+                logger.info('Sending message...')
+                timestamp = getTime(row['timeStamp'])
+                activator = row['activatorCallsign']
+                actName = row['activatorName']
+                comment = row['comments']
+                summitCode = row['summitCode']
+                summitDetails = row['summitDetails']
+                frequency = row['frequency']
+                mode = row['mode']
+                # urlSummit = 
+                urlActivator = 'https://www.qrz.com/db/' + row['activatorCallsign']
+                await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> - <i>{actName}</i> is now activating summit <b>[ {summitCode} ]</b> - <i>{summitDetails}</i>\n\n"
+                                                f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
+                                                f"Frequency: <b>{frequency}</b>\n"
+                                                f"Mode: <b>{mode}</b>\n"
+                                                f"Activator's comment: <b>{comment}</b>", parse_mode='HTML')
+                sleep(0.5)
+
 if __name__ == '__main__':
     logger.info('Starting bot...')
     app = Application.builder().token(TOKEN).build()
@@ -91,7 +118,8 @@ if __name__ == '__main__':
     # Commands
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
-    app.add_handler(CommandHandler('get_activators', get_activators_command))
+    app.add_handler(CommandHandler('get_POTA', get_POTA_command))
+    app.add_handler(CommandHandler('get_SOTA', get_SOTA_command))
 
     # Polling
     logger.info('Polling...')

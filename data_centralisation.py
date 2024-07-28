@@ -40,14 +40,14 @@ def fetchData(url: str) -> dict:
         logging.error(f'Request exception: {e}')
         return None
 
-# Function that takes the fetched data and stores it into a Pandas DataFrame, keeping only YO activators
-def centralise():
+# Function that takes the fetched data and stores it into a Pandas DataFrame for POTA activations
+def centralisePOTA():
     logger.info('Fetching data from [https://api.pota.app/spot/activator]...')
     url = 'https://api.pota.app/spot/activator'
     data = fetchData(url)
     df = pd.DataFrame
     if data:
-        logger.info('Fetching successful.')
+        logger.info('Fetching successful, building DataFrame...')
 
         # Construction of DataFrame
         df = pd.DataFrame(data)
@@ -63,4 +63,23 @@ def centralise():
         return (1, df)
     else:
         logger.error('Failed to fetch data.')
+        return (0, df)
+
+# Function that takes the fetched data and stores it into a Pandas DataFrame for SOTA activations
+def centraliseSOTA():
+    logger.info('Fetching data from [https://api2.sota.org.uk/api/spots/-24/all]...')
+    url = 'https://api2.sota.org.uk/api/spots/-24/all'
+    data = fetchData(url)
+    df = pd.DataFrame
+    if data:
+        logger.info('Fetching successful, building DataFrame')
+
+        # Construction of DataFrame
+        df = pd.DataFrame(data)
+        df.drop(['id', 'userID', 'callsign', 'associationCode', 'highlightColor'], axis=1, inplace=True)
+
+        df.drop_duplicates(inplace=True)
+        logger.info('Operation complete.')
+        return (1, df)
+    else:
         return (0, df)
