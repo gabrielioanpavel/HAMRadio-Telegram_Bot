@@ -53,10 +53,12 @@ def centralisePOTA():
         df = pd.DataFrame(data)
         df.drop(['spotId', 'spotTime', 'source', 'spotter', 'parkName', 'invalid', 'grid6', 'count', 'expire'], axis=1, inplace=True)
 
-        # This is a filter so that only European activators are kept in the DataFrame
-        grids = os.getenv('GRIDS_EU').split()
-        mask = df['grid4'].apply(lambda x: any(x.startswith(grid) for grid in grids))
-        df = df[mask].reset_index(drop=True)
+        # This is a filter for removing certain lines form the DataFrame
+        filterPOTA = os.getenv('FILTER_POTA')
+        if filterPOTA:
+            filterPOTA = filterPOTA.split()
+            mask = df['grid4'].apply(lambda x: any(x.startswith(grid) for grid in filterPOTA))
+            df = df[mask].reset_index(drop=True)
 
         df.drop_duplicates(inplace=True)
         logger.info('Operation complete.')
@@ -77,6 +79,13 @@ def centraliseSOTA():
         # Construction of DataFrame
         df = pd.DataFrame(data)
         df.drop(['id', 'userID', 'callsign', 'associationCode', 'highlightColor'], axis=1, inplace=True)
+
+        # This is a filter for removing certain lines form the DataFrame
+        filterSOTA = os.getenv('FILTER_POTA')
+        if filterSOTA:
+            filterSOTA = filterSOTA.split()
+            mask = df['activatorCallsign'].apply(lambda x: any(x.startswith(grid) for grid in filterSOTA))
+            df = df[mask].reset_index(drop=True)
 
         df.drop_duplicates(inplace=True)
         logger.info('Operation complete.')

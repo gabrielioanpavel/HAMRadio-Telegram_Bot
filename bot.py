@@ -110,6 +110,7 @@ async def get_SOTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                                 f"Mode: <b>{mode}</b>\n"
                                                 f"Activator's comment: <b>{comment}</b>", parse_mode='HTML')
                 sleep(0.5)
+        logger.info('All messages have been sent.')
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
