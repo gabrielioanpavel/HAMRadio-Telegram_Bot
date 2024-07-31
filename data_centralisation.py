@@ -41,7 +41,7 @@ def fetchData(url: str) -> dict:
         return None
 
 # Function that takes the fetched data and stores it into a Pandas DataFrame for POTA activations
-def centralisePOTA():
+def centralisePOTA(filterPOTA=os.getenv('FILTER_POTA')):
     logger.info('Fetching data from [https://api.pota.app/spot/activator]...')
     url = 'https://api.pota.app/spot/activator'
     data = fetchData(url)
@@ -54,7 +54,6 @@ def centralisePOTA():
         df.drop(['spotId', 'spotTime', 'source', 'spotter', 'parkName', 'invalid', 'grid6', 'count', 'expire'], axis=1, inplace=True)
 
         # This is a filter for removing certain lines form the DataFrame
-        filterPOTA = os.getenv('FILTER_POTA')
         if filterPOTA:
             filterPOTA = filterPOTA.split()
             mask = df['grid4'].apply(lambda x: any(x.startswith(grid) for grid in filterPOTA))
@@ -68,7 +67,7 @@ def centralisePOTA():
         return (0, df)
 
 # Function that takes the fetched data and stores it into a Pandas DataFrame for SOTA activations
-def centraliseSOTA():
+def centraliseSOTA(filterSOTA=os.getenv('FILTER_SOTA')):
     logger.info('Fetching data from [https://api2.sota.org.uk/api/spots/-24/all]...')
     url = 'https://api2.sota.org.uk/api/spots/-24/all'
     data = fetchData(url)
@@ -78,13 +77,12 @@ def centraliseSOTA():
 
         # Construction of DataFrame
         df = pd.DataFrame(data)
-        df.drop(['id', 'userID', 'callsign', 'associationCode', 'highlightColor'], axis=1, inplace=True)
+        df.drop(['id', 'userID', 'callsign', 'highlightColor'], axis=1, inplace=True)
 
         # This is a filter for removing certain lines form the DataFrame
-        filterSOTA = os.getenv('FILTER_POTA')
         if filterSOTA:
             filterSOTA = filterSOTA.split()
-            mask = df['activatorCallsign'].apply(lambda x: any(x.startswith(grid) for grid in filterSOTA))
+            mask = df['associationCode'].apply(lambda x: any(x.startswith(grid) for grid in filterSOTA))
             df = df[mask].reset_index(drop=True)
 
         df.drop_duplicates(inplace=True)
