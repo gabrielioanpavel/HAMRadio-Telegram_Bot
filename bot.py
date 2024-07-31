@@ -53,7 +53,7 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
             await update.message.reply_text('Bot does not work in private chat.')
             return
         if context.args:
-            filterPOTA = os.getenv(context.args[0] + '_POTA')
+            filterPOTA = os.getenv(context.args[0].upper() + '_POTA')
             if not filterPOTA:
                 await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
                 return
@@ -93,7 +93,7 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
             await update.message.reply_text('Bot does not work in private chat.')
             return
         if context.args:
-            filterSOTA = os.getenv(context.args[0] + '_SOTA')
+            filterSOTA = os.getenv(context.args[0].upper() + '_SOTA')
             if not filterSOTA:
                 await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
                 return
