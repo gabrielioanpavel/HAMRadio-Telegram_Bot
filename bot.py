@@ -4,8 +4,8 @@ import data_centralisation as dc
 import pandas
 from dotenv import load_dotenv
 from logging_config import setup_logger
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+import telegram
+import telegram.ext
 from time import sleep
 
 logger = setup_logger()
@@ -35,24 +35,36 @@ def getTime(ts):
 
 # Commands
 
-async def start_command(update: Update, conext: ContextTypes.DEFAULT_TYPE):
+async def start_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         await update.message.reply_text('Hello! This is a bot that provides information related to POTA activations.')
 
-async def help_command(update: Update, conext: ContextTypes.DEFAULT_TYPE):
+async def help_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
                                         "-- /start - Starts the bot\n"
                                         "-- /help - Provides a list of usable commands\n"
-                                        "-- /get_activators - Provides a list of the most recent spotted activators",
+                                        "-- /get_pota - Provides a list of the most recent spotted POTA activators\n"
+                                        "-- /get_sota - Provides a list of the most recent spotted SOTA activators\n"
+                                        "<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
+                                        "<b>Available filters:</b>\n"
+                                        "-- EU - Europe\n"
+                                        "-- RO - Romania",
                                         parse_mode='HTML')
 
-async def get_POTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def get_POTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
-        ok, df = dc.centralisePOTA()
+        if context.args:
+            filterPOTA = os.getenv(context.args[0].upper() + '_POTA')
+            if not filterPOTA:
+                await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
+                return
+            ok, df = dc.centralisePOTA(filterPOTA)
+        else:
+            ok, df = dc.centralisePOTA()
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
@@ -80,12 +92,19 @@ async def get_POTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sleep(0.5)
     logger.info('All messages have been sent.')
 
-async def get_SOTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def get_SOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
-        ok, df = dc.centraliseSOTA()
+        if context.args:
+            filterSOTA = os.getenv(context.args[0].upper() + '_SOTA')
+            if not filterSOTA:
+                await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
+                return
+            ok, df = dc.centraliseSOTA(filterSOTA)
+        else:
+            ok, df = dc.centraliseSOTA()
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
@@ -102,7 +121,6 @@ async def get_SOTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 summitDetails = row['summitDetails']
                 frequency = row['frequency']
                 mode = row['mode']
-                # urlSummit = 
                 urlActivator = 'https://www.qrz.com/db/' + row['activatorCallsign']
                 await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> - <i>{actName}</i> is now activating summit <b>[ {summitCode} ]</b> - <i>{summitDetails}</i>\n\n"
                                                 f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
@@ -114,13 +132,14 @@ async def get_SOTA_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
-    app = Application.builder().token(TOKEN).build()
+    app = telegram.ext.Application.builder().token(TOKEN).build()
 
     # Commands
-    app.add_handler(CommandHandler('start', start_command))
-    app.add_handler(CommandHandler('help', help_command))
-    app.add_handler(CommandHandler('get_POTA', get_POTA_command))
-    app.add_handler(CommandHandler('get_SOTA', get_SOTA_command))
+    app.add_handler(telegram.ext.CommandHandler('start', start_command))
+    app.add_handler(telegram.ext.CommandHandler('help', help_command))
+    app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
+    app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
+    
 
     # Polling
     logger.info('Polling...')
