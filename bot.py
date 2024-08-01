@@ -142,7 +142,7 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
         logger.info('All messages have been sent.')
 
 async def auto_spot(app):
-    df = dc.centralisePOTA()
+    _, df = dc.centralisePOTA()
     flt = os.getenv('AUTO_SPOT')
     if flt:
         flt = flt.split()
@@ -183,7 +183,8 @@ if __name__ == '__main__':
     app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
 
     # Automatic spotting
-    app.loop.create_task(scheduler(app))
+    loop = asyncio.get_event_loop()
+    loop.create_task(scheduler(app))
 
     # Polling
     logger.info('Polling...')
