@@ -7,6 +7,7 @@ from logging_config import setup_logger
 import telegram
 import telegram.ext
 from time import sleep
+import asyncio
 
 logger = setup_logger()
 
@@ -20,6 +21,8 @@ if not TOKEN:
 BOT_USERNAME = str(os.getenv('BOT_USERNAME'))
 if not BOT_USERNAME:
     raise ValueError("Bot username not provided")
+
+CHAT_ID = int(os.getenv('CHAT_ID'))
 
 TOPIC_ID = int(os.getenv('TOPIC_ID'))
 if not TOPIC_ID:
@@ -45,7 +48,7 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
                                         "-- /start - Starts the bot\n"
                                         "-- /help - Provides a list of usable commands\n"
                                         "-- /get_pota - Provides a list of the most recent spotted POTA activators\n"
-                                        "-- /get_sota - Provides a list of the most recent spotted SOTA activators\n"
+                                        "-- /get_sota - Provides a list of the most recent spotted SOTA activators\n\n"
                                         "<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
                                         "<b>Available filters:</b>\n"
                                         "-- EU - Europe\n"
@@ -53,10 +56,11 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
                                         parse_mode='HTML')
 
 async def get_POTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.message.message_thread_id == TOPIC_ID:
-        if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
+    
+    if update.message.message_thread_id == TOPIC_ID:
         if context.args:
             filterPOTA = os.getenv(context.args[0].upper() + '_POTA')
             if not filterPOTA:
@@ -65,9 +69,11 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
             ok, df = dc.centralisePOTA(filterPOTA)
         else:
             ok, df = dc.centralisePOTA()
+
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
+        
         if df.empty:
             await update.message.reply_text('No activators found.')
         else:
@@ -90,13 +96,15 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
                                                 f"Region: <b>{locationDesc}</b>\n"
                                                 f"Info: <b>{comment}</b>", parse_mode='HTML')
                 sleep(0.5)
+
     logger.info('All messages have been sent.')
 
 async def get_SOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.message.message_thread_id == TOPIC_ID:
-        if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
+    
+    if update.message.message_thread_id == TOPIC_ID:
         if context.args:
             filterSOTA = os.getenv(context.args[0].upper() + '_SOTA')
             if not filterSOTA:
@@ -105,9 +113,11 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
             ok, df = dc.centraliseSOTA(filterSOTA)
         else:
             ok, df = dc.centraliseSOTA()
+
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
+        
         if df.empty:
             await update.message.reply_text('No activators found.')
         else:
@@ -128,7 +138,39 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
                                                 f"Mode: <b>{mode}</b>\n"
                                                 f"Activator's comment: <b>{comment}</b>", parse_mode='HTML')
                 sleep(0.5)
+
         logger.info('All messages have been sent.')
+
+async def auto_spot(app):
+    df = dc.centralisePOTA()
+    flt = os.getenv('AUTO_SPOT')
+    if flt:
+        flt = flt.split()
+        mask = df['activator'].apply(lambda x: any(x.startswith(act) for act in flt))
+        df = df[mask].reset_index(drop=True)
+        for index, row in df.iterrows():
+            activator = row['activator']
+            frequency = row['frequency']
+            reference = row['reference']
+            mode = row['mode']
+            name = row['name']
+            locationDesc = row['locationDesc']
+            comment = row['comments']
+
+            urlPark = 'https://pota.app/#/park/'+ reference
+            urlActivator = 'https://www.qrz.com/db/' + activator
+
+            message = (f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
+                       f"Frequency: <b>{frequency}</b>\n"
+                       f"Mode: <b>{mode}</b>\n"
+                       f"Region: <b>{locationDesc}</b>\n"
+                       f"Info: <b>{comment}</b>")
+            await app.bot.send_message(chat_id=CHAT_ID, text=message, message_thread_id=TOPIC_ID, parse_mode='HTML')
+
+async def scheduler(app):
+    while True:
+        await auto_spot(app)
+        await asyncio.sleep(300)
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
@@ -139,7 +181,9 @@ if __name__ == '__main__':
     app.add_handler(telegram.ext.CommandHandler('help', help_command))
     app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
-    
+
+    # Automatic spotting
+    app.loop.create_task(scheduler(app))
 
     # Polling
     logger.info('Polling...')

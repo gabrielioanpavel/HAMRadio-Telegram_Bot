@@ -68,8 +68,8 @@ def centralisePOTA(filterPOTA=os.getenv('FILTER_POTA')):
 
 # Function that takes the fetched data and stores it into a Pandas DataFrame for SOTA activations
 def centraliseSOTA(filterSOTA=os.getenv('FILTER_SOTA')):
-    logger.info('Fetching data from [https://api2.sota.org.uk/api/spots/-24/all]...')
-    url = 'https://api2.sota.org.uk/api/spots/-24/all'
+    logger.info('Fetching data from [https://api2.sota.org.uk/api/spots/-1/all]...')
+    url = 'https://api2.sota.org.uk/api/spots/-1/all'
     data = fetchData(url)
     df = pd.DataFrame
     if data:
