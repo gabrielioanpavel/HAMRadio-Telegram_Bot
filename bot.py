@@ -170,7 +170,7 @@ async def auto_spot(app):
 async def scheduler(app):
     while True:
         await auto_spot(app)
-        await asyncio.sleep(300)
+        await asyncio.sleep(1800)
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
