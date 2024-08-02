@@ -37,10 +37,10 @@ def getTime(ts):
     hour = ts[i+1:]
     return (date, hour)
 
-async def send_message_with_retry(app, chat_id, text, parse_mode='HTML', max_retries=3):
+async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_mode='HTML', max_retries=3):
     for attempt in range(max_retries):
         try:
-            await app.bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
+            await app.bot.send_message(chat_id=chat_id, message_thread_id=message_thread_id, text=text, parse_mode=parse_mode)
             return
         except httpx.ConnectTimeout as e:
             logger.error(f"Connection timeout on attempt {attempt + 1}/{max_retries}: {e}")
@@ -180,7 +180,7 @@ async def auto_spot(app):
                         f"Mode: <b>{mode}</b>\n"
                         f"Region: <b>{locationDesc}</b>\n"
                         f"Info: <b>{comment}</b>")
-                await send_message_with_retry(app, CHAT_ID, message)
+                await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
                 await asyncio.sleep(0.5)
             logger.info("Auto spot messages sent successfully.")
     except Exception as e:
