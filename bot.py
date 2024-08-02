@@ -8,6 +8,7 @@ import telegram
 import telegram.ext
 from time import sleep
 import asyncio
+import httpx
 
 logger = setup_logger()
 
@@ -35,6 +36,19 @@ def getTime(ts):
     date = ts[:i]
     hour = ts[i+1:]
     return (date, hour)
+
+async def send_message_with_retry(app, chat_id, text, parse_mode='HTML', max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            await app.bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
+            return
+        except httpx.ConnectTimeout as e:
+            logger.error(f"Connection timeout on attempt {attempt + 1}/{max_retries}: {e}")
+            await asyncio.sleep(2 ** attempt)  # Exponential backoff
+        except Exception as e:
+            logger.error(f"Unexpected error on attempt {attempt + 1}/{max_retries}: {e}")
+            break
+    logger.error(f"Failed to send message after {max_retries} attempts.")
 
 # Commands
 
@@ -142,30 +156,35 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
         logger.info('All messages have been sent.')
 
 async def auto_spot(app):
-    _, df = dc.centralisePOTA()
-    flt = os.getenv('AUTO_SPOT')
-    if flt:
-        flt = flt.split()
-        mask = df['activator'].apply(lambda x: any(x.startswith(act) for act in flt))
-        df = df[mask].reset_index(drop=True)
-        for index, row in df.iterrows():
-            activator = row['activator']
-            frequency = row['frequency']
-            reference = row['reference']
-            mode = row['mode']
-            name = row['name']
-            locationDesc = row['locationDesc']
-            comment = row['comments']
+    try:
+        _, df = dc.centralisePOTA()
+        flt = os.getenv('AUTO_SPOT')
+        if flt:
+            flt = flt.split()
+            mask = df['activator'].apply(lambda x: any(x.startswith(act) for act in flt))
+            df = df[mask].reset_index(drop=True)
+            for index, row in df.iterrows():
+                activator = row['activator']
+                frequency = row['frequency']
+                reference = row['reference']
+                mode = row['mode']
+                name = row['name']
+                locationDesc = row['locationDesc']
+                comment = row['comments']
 
-            urlPark = 'https://pota.app/#/park/'+ reference
-            urlActivator = 'https://www.qrz.com/db/' + activator
+                urlPark = 'https://pota.app/#/park/'+ reference
+                urlActivator = 'https://www.qrz.com/db/' + activator
 
-            message = (f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
-                       f"Frequency: <b>{frequency}</b>\n"
-                       f"Mode: <b>{mode}</b>\n"
-                       f"Region: <b>{locationDesc}</b>\n"
-                       f"Info: <b>{comment}</b>")
-            await app.bot.send_message(chat_id=CHAT_ID, text=message, message_thread_id=TOPIC_ID, parse_mode='HTML')
+                message = (f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
+                        f"Frequency: <b>{frequency}</b>\n"
+                        f"Mode: <b>{mode}</b>\n"
+                        f"Region: <b>{locationDesc}</b>\n"
+                        f"Info: <b>{comment}</b>")
+                await send_message_with_retry(app, CHAT_ID, message)
+                await asyncio.sleep(0.5)
+            logger.info("Auto spot messages sent successfully.")
+    except Exception as e:
+        logger.error(f"Error in auto_spot: {e}")
 
 async def scheduler(app):
     while True:
