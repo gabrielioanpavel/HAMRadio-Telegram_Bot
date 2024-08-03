@@ -155,6 +155,18 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 
         logger.info('All messages have been sent.')
 
+async def send_msg(activator, frequency, reference, mode, name, locationDesc, comment):
+    urlPark = 'https://pota.app/#/park/'+ reference
+    urlActivator = 'https://www.qrz.com/db/' + activator
+
+    message = (f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
+               f"Frequency: <b>{frequency}</b>\n"
+               f"Mode: <b>{mode}</b>\n"
+               f"Region: <b>{locationDesc}</b>\n"
+               f"Info: <b>{comment}</b>")
+    await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
+    await asyncio.sleep(0.5)
+
 async def auto_spot(app):
     try:
         _, df = dc.centralisePOTA()
@@ -163,25 +175,17 @@ async def auto_spot(app):
             flt = flt.split()
             mask = df['activator'].apply(lambda x: any(x.startswith(act) for act in flt))
             df = df[mask].reset_index(drop=True)
+
+            act = {}
             for index, row in df.iterrows():
-                activator = row['activator']
-                frequency = row['frequency']
-                reference = row['reference']
-                mode = row['mode']
-                name = row['name']
-                locationDesc = row['locationDesc']
-                comment = row['comments']
+                if row['activator'] not in act:
+                    act[row['activator']] = row['reference']
+                    await send_msg(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
+                    continue
+                if act[row['activator']] != row['reference']:
+                    act[row['activator']] = row['reference']
+                    await send_msg(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
 
-                urlPark = 'https://pota.app/#/park/'+ reference
-                urlActivator = 'https://www.qrz.com/db/' + activator
-
-                message = (f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
-                        f"Frequency: <b>{frequency}</b>\n"
-                        f"Mode: <b>{mode}</b>\n"
-                        f"Region: <b>{locationDesc}</b>\n"
-                        f"Info: <b>{comment}</b>")
-                await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
-                await asyncio.sleep(0.5)
             logger.info("Auto spot messages sent successfully.")
     except Exception as e:
         logger.error(f"Error in auto_spot: {e}")
@@ -189,7 +193,7 @@ async def auto_spot(app):
 async def scheduler(app):
     while True:
         await auto_spot(app)
-        await asyncio.sleep(1800)
+        await asyncio.sleep(180)
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
