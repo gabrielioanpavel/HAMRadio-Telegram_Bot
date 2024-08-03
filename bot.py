@@ -9,6 +9,7 @@ import telegram.ext
 from time import sleep
 import asyncio
 import httpx
+from functools import lru_cache
 
 logger = setup_logger()
 
@@ -167,7 +168,9 @@ async def send_msg(activator, frequency, reference, mode, name, locationDesc, co
     await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
     await asyncio.sleep(0.5)
 
+act = {}
 async def auto_spot(app):
+    global act
     try:
         _, df = dc.centralisePOTA()
         flt = os.getenv('AUTO_SPOT')
@@ -176,7 +179,6 @@ async def auto_spot(app):
             mask = df['activator'].apply(lambda x: any(x.startswith(act) for act in flt))
             df = df[mask].reset_index(drop=True)
 
-            act = {}
             for index, row in df.iterrows():
                 if row['activator'] not in act:
                     act[row['activator']] = row['reference']
