@@ -65,7 +65,7 @@ should coincide with **SOMETHING** (i.e. `/get_pota EU` for the above European f
 /get_sota
 ```
 
-### Running the bot
+## Running the bot
 
 Run the following command in the terminal to start the bot:
 
