@@ -9,7 +9,6 @@ import telegram.ext
 from time import sleep
 import asyncio
 import httpx
-from functools import lru_cache
 
 logger = setup_logger()
 
