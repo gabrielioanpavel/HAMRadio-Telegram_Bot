@@ -24,6 +24,8 @@ if not BOT_USERNAME:
     raise ValueError("Bot username not provided")
 
 CHAT_ID = int(os.getenv('CHAT_ID'))
+if not CHAT_ID:
+    raise ValueError("Chat ID not provided")
 
 TOPIC_ID = int(os.getenv('TOPIC_ID'))
 if not TOPIC_ID:
@@ -44,7 +46,7 @@ async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_m
             return
         except httpx.ConnectTimeout as e:
             logger.error(f"Connection timeout on attempt {attempt + 1}/{max_retries}: {e}")
-            await asyncio.sleep(2 ** attempt)  # Exponential backoff
+            await asyncio.sleep(2 ** attempt)
         except Exception as e:
             logger.error(f"Unexpected error on attempt {attempt + 1}/{max_retries}: {e}")
             break
@@ -54,7 +56,7 @@ async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_m
 
 async def start_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
-        await update.message.reply_text('Hello! This is a bot that provides information related to POTA activations.')
+        await update.message.reply_text('Hello! This is a bot that provides information related to POTA and SOTA activations.')
 
 async def help_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
@@ -170,26 +172,29 @@ async def send_msg(activator, frequency, reference, mode, name, locationDesc, co
 act = {}
 async def auto_spot(app):
     global act
+    sent = False
     try:
         _, df = dc.centralisePOTA()
         flt = os.getenv('AUTO_SPOT')
         if flt:
             flt = flt.split()
-            mask = df['activator'].apply(lambda x: any(x.startswith(act) for act in flt))
+            mask = df['activator'].apply(lambda x: any(activator in x for activator in flt))
             df = df[mask].reset_index(drop=True)
 
             for index, row in df.iterrows():
                 if row['activator'] not in act:
                     act[row['activator']] = row['reference']
                     await send_msg(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
+                    sent = True
                     continue
                 if act[row['activator']] != row['reference']:
                     act[row['activator']] = row['reference']
                     await send_msg(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
-
-            logger.info("Auto spot messages sent successfully.")
+                    sent = True
+            if sent:
+                logger.info("Auto spot messages sent successfully.")
     except Exception as e:
-        logger.error(f"Error in auto_spot: {e}")
+        logger.error(f"Auto spot error: {e}")
 
 async def scheduler(app):
     while True:
