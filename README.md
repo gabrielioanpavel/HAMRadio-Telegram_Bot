@@ -1,7 +1,7 @@
 # Telegram Bot for POTA and SOTA information
 
-I created this mainly for personal use, but decided to create a repo for it. Its main features are
-POTA and SOTA spotting in the form of commands and auto-spotting for POTA for selected callsigns.
+I created this mainly for HAM Radio operators YO3BEE and YO3DYL, but decided to create a repo for it. Its main features are
+POTA and SOTA spotting in the form of commands and auto-spotting for selected callsigns.
 
 ## Getting Started
 

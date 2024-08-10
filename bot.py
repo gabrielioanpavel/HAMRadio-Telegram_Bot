@@ -157,7 +157,7 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 
         logger.info('All messages have been sent.')
 
-async def send_msg(activator, frequency, reference, mode, name, locationDesc, comment):
+async def send_msg_POTA(activator, frequency, reference, mode, name, locationDesc, comment):
     urlPark = 'https://pota.app/#/park/'+ reference
     urlActivator = 'https://www.qrz.com/db/' + activator
 
@@ -169,9 +169,22 @@ async def send_msg(activator, frequency, reference, mode, name, locationDesc, co
     await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
     await asyncio.sleep(0.5)
 
-act = {}
+async def send_msg_SOTA(timeStamp, activatorCallsign, activatorName, comments, summitCode, summitDetails, frequency, mode):
+    urlActivator = 'https://www.qrz.com/db/' + activatorCallsign
+
+    message = (f"<a href='{urlActivator}'><b>[ {activatorCallsign} ]</b></a> - <i>{activatorName}</i> is now activating summit <b>[ {summitCode} ]</b> - <i>{summitDetails}</i>\n\n"
+               f"Posted at: <b>{timeStamp[0]} - {timeStamp[1]}</b>\n"
+               f"Frequency: <b>{frequency}</b>\n"
+               f"Mode: <b>{mode}</b>\n"
+               f"Activator's comment: <b>{comments}</b>")
+    await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
+    await asyncio.sleep(0.5)
+
+act_pota = {}
+act_sota = {}
 async def auto_spot(app):
-    global act
+    global act_pota
+    global act_sota
     sent = False
     try:
         _, df = dc.centralisePOTA()
@@ -182,14 +195,38 @@ async def auto_spot(app):
             df = df[mask].reset_index(drop=True)
 
             for index, row in df.iterrows():
-                if row['activator'] not in act:
-                    act[row['activator']] = row['reference']
-                    await send_msg(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
+                if row['activator'] not in act_pota:
+                    act_pota[row['activator']] = row['reference']
+                    await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
                     sent = True
                     continue
-                if act[row['activator']] != row['reference']:
-                    act[row['activator']] = row['reference']
-                    await send_msg(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
+                if act_pota[row['activator']] != row['reference']:
+                    act_pota[row['activator']] = row['reference']
+                    await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
+                    sent = True
+            if sent:
+                logger.info("Auto spot messages sent successfully.")
+    except Exception as e:
+        logger.error(f"Auto spot error: {e}")
+    
+    sent = False
+    try:
+        _, df = dc.centraliseSOTA()
+        flt = os.getenv('AUTO_SPOT')
+        if flt:
+            flt = flt.split()
+            mask = df['activatorCallsign'].apply(lambda x: any(activator in x for activator in flt))
+            df = df[mask].reset_index(drop=True)
+
+            for index, row in df.iterrows():
+                if row['activatorCallsign'] not in act_sota:
+                    act_sota[row['activatorCallsign']] = row['summitCode']
+                    await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
+                    sent = True
+                    continue
+                if act_sota[row['activatorCallsign']] != row['summitCode']:
+                    act_sota[row['activatorCallsign']] = row['summitCode']
+                    await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
                     sent = True
             if sent:
                 logger.info("Auto spot messages sent successfully.")
