@@ -1,7 +1,6 @@
 import os
-import logging
 import data_centralisation as dc
-import pandas
+import pandas as pd
 from dotenv import load_dotenv
 from logging_config import setup_logger
 import telegram
@@ -32,6 +31,24 @@ if not TOPIC_ID:
     raise ValueError("Topic ID not provided")
 
 logger.info('Environmental variables loaded successfully.')
+
+# Load callbook
+logger.info('Loading callbook...')
+try:
+    callbook = pd.read_csv('res/callbook.csv')
+except FileNotFoundError:
+    logger.error(f'Could not find the file \'callbook.csv\'')
+except pd.errors.EmptyDataError:
+    logger.error("The file is empty.")
+except pd.errors.ParserError:
+    logger.error("Error: There was an issue parsing the CSV file.")
+except UnicodeDecodeError:
+    logger.error("Error: Could not decode the file. Try specifying a different encoding.")
+except Exception as e:
+    logger.error(f"An unexpected error occurred: {e}")
+else:
+    logger.info('Callbook successfully loaded.')
+callbook.drop(columns=['SUFIXUL', 'ADRESA', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
 
 def getTime(ts):
     i = ts.index('T')
@@ -157,6 +174,34 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 
         logger.info('All messages have been sent.')
 
+async def info_operator_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type == 'private':
+            await update.message.reply_text('Bot does not work in private chat.')
+            return
+    
+    if update.message.message_thread_id == TOPIC_ID:
+        if not context.args:
+            await update.message.reply_text('Please provide a callsign.')
+            return
+        
+        if len(context.args) > 1:
+            await update.message.reply_text('Too many arguments.')
+        else:
+            callsign = context.args[0].strip().upper()
+            index = callbook[callbook['INDICATIVUL'].str.strip().str.upper() == callsign].index
+            if len(index) == 0:
+                await update.message.reply_text('Callsign not found.')
+            else:
+                row = callbook.loc[index[0]]
+                name = row['TITULARUL']
+                cls = row['CLASA']
+                loc = row['LOCALITATEA']
+                exp = row['DATA EXPIRARII']
+                await update.message.reply_text(f"Showing information about operator: <b>{name} - {callsign}</b>\n"
+                                                f"Class: <b>{cls}</b>\n"
+                                                f"Location: <b>{loc}</b>\n"
+                                                f"Expiration date: <b>{exp}</b>", parse_mode='HTML')
+
 async def send_msg_POTA(activator, frequency, reference, mode, name, locationDesc, comment):
     urlPark = 'https://pota.app/#/park/'+ reference
     urlActivator = 'https://www.qrz.com/db/' + activator
@@ -247,6 +292,7 @@ if __name__ == '__main__':
     app.add_handler(telegram.ext.CommandHandler('help', help_command))
     app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
+    app.add_handler(telegram.ext.CommandHandler('callsign', info_operator_command))
 
     # Automatic spotting
     loop = asyncio.get_event_loop()
