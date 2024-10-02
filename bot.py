@@ -174,7 +174,7 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 
         logger.info('All messages have been sent.')
 
-async def info_operator_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+async def callsign_info_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
@@ -197,10 +197,12 @@ async def info_operator_command(update: telegram.Update, context: telegram.ext.C
                 cls = row['CLASA']
                 loc = row['LOCALITATEA']
                 exp = row['DATA EXPIRARII']
+                url = 'https://www.ancom.ro/radioamatori_2899'
                 await update.message.reply_text(f"Showing information about operator: <b>{name} - {callsign}</b>\n"
                                                 f"Class: <b>{cls}</b>\n"
                                                 f"Location: <b>{loc}</b>\n"
-                                                f"Expiration date: <b>{exp}</b>", parse_mode='HTML')
+                                                f"Expiration date: <b>{exp}</b>\n"
+                                                f"Source: <a href='{url}'><b>ANCOM</b></a>", parse_mode='HTML')
 
 async def send_msg_POTA(activator, frequency, reference, mode, name, locationDesc, comment):
     urlPark = 'https://pota.app/#/park/'+ reference
@@ -292,7 +294,7 @@ if __name__ == '__main__':
     app.add_handler(telegram.ext.CommandHandler('help', help_command))
     app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
-    app.add_handler(telegram.ext.CommandHandler('callsign', info_operator_command))
+    app.add_handler(telegram.ext.CommandHandler('callsign', callsign_info_command))
 
     # Automatic spotting
     loop = asyncio.get_event_loop()
