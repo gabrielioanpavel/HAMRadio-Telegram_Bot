@@ -1,11 +1,17 @@
 import pandas as pd
 import requests
 import logging
-import json
 import os
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
+import time
 
 logger = logging.getLogger('BotLogger')
 load_dotenv()
@@ -90,3 +96,59 @@ def centraliseSOTA(filterSOTA=os.getenv('FILTER_SOTA')):
         return (1, df)
     else:
         return (0, df)
+
+def centraliseBOTA(url):
+    try:
+        # Setup Chrome Driver
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+        # Get the page
+        driver.get(url)
+        time.sleep(5)
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        # Fetch the table
+        forthcoming_div = soup.find('div', {'class': 'view-header'}).find('h2', string="Forthcoming")
+        if forthcoming_div:
+            next_div = forthcoming_div.find_parent('div').find_next_sibling('div')
+            table = next_div.find('table')
+            if table:
+                headers = []
+                data = []
+                header_row = table.find('thead')
+                if header_row:
+                    headers = [th.text.strip() for th in header_row.find_all('th')]
+                rows = table.find_all('tr')
+                for row in rows:
+                    cells = row.find_all('td')
+                    row_data = [cell.text.strip() for cell in cells]
+                    if row_data:
+                        data.append(row_data)
+                if data:
+                    df = pd.DataFrame(data, columns=headers if headers else None)
+                    df = df.iloc[:, :-1]
+                    print(df)
+                    return (1, df)
+                else:
+                    df = pd.DataFrame
+                    logger.info("No data found in table.")
+                    return (0, df)
+            else:
+                logger.error("Could not find table.")
+        else:
+            logger.error("Could not find 'Forthcoming' section.")
+    except NoSuchElementException as e:
+        logger.error(f"Unable to find the table or element on the page. Details: {e}")
+    except TimeoutException as e:
+        logger.error(f"The page took too long to load. Details: {e}")
+    except WebDriverException as e:
+        logger.error(f"Issue with WebDriver. Details: {e}")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred. Details: {e}")
+    finally:
+        driver.quit()

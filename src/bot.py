@@ -50,6 +50,8 @@ else:
     logger.info('Callbook successfully loaded.')
 callbook.drop(columns=['SUFIXUL', 'ADRESA', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
 
+# Utils
+
 def getTime(ts):
     i = ts.index('T')
     date = ts[:i]
@@ -71,10 +73,6 @@ async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_m
 
 # Commands
 
-async def start_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.message.message_thread_id == TOPIC_ID:
-        await update.message.reply_text('Hello! This is a bot that provides information related to POTA and SOTA activations.')
-
 async def help_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
@@ -87,6 +85,35 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
                                         "-- EU - Europe\n"
                                         "-- RO - Romania",
                                         parse_mode='HTML')
+
+async def get_BOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type == 'private':
+            await update.message.reply_text('Bot does not work in private chat.')
+            return
+    
+    if update.message.message_thread_id == TOPIC_ID:
+        ok, df = dc.centraliseBOTA('https://www.beachesontheair.com/activations/announcements')
+
+        if ok == 0:
+            await update.message.reply_text('An error occoured.')
+            return
+        
+        if df.empty:
+            await update.message.reply_text('No activators found.')
+        else:
+            for index, row in df.iterrows():
+                logger.info('Sending message...')
+                activator = row['Activator']
+                location = row['Activation'].split(' by')[0]
+                date = row['UTC']
+
+                urlActivator = 'https://www.qrz.com/db/' + activator
+
+                await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> will be activating beach <b>[ {location} ]</b>\n\n"
+                                                f"Date and time: <b>{date}</b>\n", parse_mode='HTML')
+                sleep(0.5)
+
+    logger.info('All messages have been sent.')
 
 async def get_POTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == 'private':
@@ -198,11 +225,13 @@ async def callsign_info_command(update: telegram.Update, context: telegram.ext.C
                 loc = row['LOCALITATEA']
                 exp = row['DATA EXPIRARII']
                 url = 'https://www.ancom.ro/radioamatori_2899'
-                await update.message.reply_text(f"Showing information about operator: <b>{name} - {callsign}</b>\n"
+                await update.message.reply_text(f"Showing information about operator: <b>{name} - [ {callsign} ]</b>\n"
                                                 f"Class: <b>{cls}</b>\n"
                                                 f"Location: <b>{loc}</b>\n"
                                                 f"Expiration date: <b>{exp}</b>\n"
                                                 f"Source: <a href='{url}'><b>ANCOM</b></a>", parse_mode='HTML')
+
+# Automatic Spotting
 
 async def send_msg_POTA(activator, frequency, reference, mode, name, locationDesc, comment):
     urlPark = 'https://pota.app/#/park/'+ reference
@@ -290,8 +319,8 @@ if __name__ == '__main__':
     app = telegram.ext.Application.builder().token(TOKEN).build()
 
     # Commands
-    app.add_handler(telegram.ext.CommandHandler('start', start_command))
     app.add_handler(telegram.ext.CommandHandler('help', help_command))
+    app.add_handler(telegram.ext.CommandHandler('get_BOTA', get_BOTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
     app.add_handler(telegram.ext.CommandHandler('callsign', callsign_info_command))

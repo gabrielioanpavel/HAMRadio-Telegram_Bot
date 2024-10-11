@@ -1,14 +1,14 @@
 # Telegram Bot for POTA and SOTA information
 
 I created this mainly for HAM Radio operators YO3BEE and YO3DYL, but decided to create a repo for it. Its main features are
-POTA and SOTA spotting in the form of commands and auto-spotting for selected callsigns.
+BOTA, POTA and SOTA spotting in the form of commands and auto-spotting for selected callsigns.
 
 ## Getting Started
 
 ### Dependencies
 
-* Ubuntu 22.04
 * Python 3
+* pip
 * All used Python modules are in requirements.txt
 
 ### Installing
@@ -19,6 +19,18 @@ POTA and SOTA spotting in the form of commands and auto-spotting for selected ca
 
 ```bash
 pip install -r requirements.txt
+```
+
+* Give execute permissions to the shell scripts:
+
+```bash
+chmod +x *.sh
+```
+
+* Install the Chrome Driver so the BOTA function will work:
+
+```bash
+./chromedriver_installation.sh
 ```
 
 ### Setup
@@ -59,8 +71,8 @@ should coincide with **SOMETHING** (i.e. `/get_pota EU` for the above European f
 * Set the following commands with `/set_commands` :
 
 ```telegram
-/start
 /info
+/get_bota
 /get_pota
 /get_sota
 ```
@@ -70,15 +82,15 @@ should coincide with **SOMETHING** (i.e. `/get_pota EU` for the above European f
 Run the following command in the terminal to start the bot:
 
 ```bash
-python3 bot.py
+./start_bot.sh
 ```
 
 You will receive informational logs in the console and error logs in the `log.txt` file.
 
 ### Usage
 
-* For the first time using the bot, run `/start`.
 * Use the `/help` command to display the available commands.
+* Use `/get_bota` to get a list of future BOTA activations.
 * Use `/get_pota` to get the latest information on POTA activations.
 * Use `/get_sota` to get the latest information on SOTA activations.
 * You may provide an argument to the `/get_pota` or `/get_sota` commands to represent a certain filter that was created in `.env`.
