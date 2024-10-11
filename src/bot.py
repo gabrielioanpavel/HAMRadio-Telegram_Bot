@@ -80,14 +80,16 @@ async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_m
 async def help_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.message.message_thread_id == TOPIC_ID:
         await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
-                                        "-- /start - Starts the bot\n"
                                         "-- /help - Provides a list of usable commands\n"
+                                        "-- /get_bota - Provides a list of the future BOTA activations\n"
                                         "-- /get_pota - Provides a list of the most recent spotted POTA activators\n"
                                         "-- /get_sota - Provides a list of the most recent spotted SOTA activators\n\n"
                                         "<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
                                         "<b>Available filters:</b>\n"
                                         "-- EU - Europe\n"
-                                        "-- RO - Romania",
+                                        "-- RO - Romania\n"
+                                        "-- US - United States\n"
+                                        "-- JA - Japan",
                                         parse_mode='HTML')
 
 async def get_BOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):

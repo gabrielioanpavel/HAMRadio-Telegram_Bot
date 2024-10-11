@@ -71,7 +71,7 @@ should coincide with **SOMETHING** (i.e. `/get_pota EU` for the above European f
 * Set the following commands with `/set_commands` :
 
 ```telegram
-/info
+/help
 /get_bota
 /get_pota
 /get_sota
