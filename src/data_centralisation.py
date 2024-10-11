@@ -132,7 +132,6 @@ def centraliseBOTA(url):
                 if data:
                     df = pd.DataFrame(data, columns=headers if headers else None)
                     df = df.iloc[:, :-1]
-                    print(df)
                     return (1, df)
                 else:
                     df = pd.DataFrame

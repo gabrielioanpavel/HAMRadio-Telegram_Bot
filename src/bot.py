@@ -32,8 +32,11 @@ if not TOPIC_ID:
 
 logger.info('Environmental variables loaded successfully.')
 
+# path_to_dir = os.path.dirname(os.path.abspath(__file__))
+
 # Load callbook
 logger.info('Loading callbook...')
+path_to_callbook = os.path.join(os.path.dirname(__file__), '../res/callbook.csv')
 try:
     callbook = pd.read_csv('res/callbook.csv')
 except FileNotFoundError:
