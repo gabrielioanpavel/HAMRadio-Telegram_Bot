@@ -36,9 +36,10 @@ logger.info('Environmental variables loaded successfully.')
 
 # Load callbook
 logger.info('Loading callbook...')
-path_to_callbook = os.path.join(os.path.dirname(__file__), '../res/callbook.csv')
+path_to_callbook = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../res/callbook.csv')
+path_to_callbook = os.path.normpath(path_to_callbook)
 try:
-    callbook = pd.read_csv('res/callbook.csv')
+    callbook = pd.read_csv(path_to_callbook)
 except FileNotFoundError:
     logger.error(f'Could not find the file \'callbook.csv\'')
 except pd.errors.EmptyDataError:
@@ -51,7 +52,7 @@ except Exception as e:
     logger.error(f"An unexpected error occurred: {e}")
 else:
     logger.info('Callbook successfully loaded.')
-callbook.drop(columns=['SUFIXUL', 'ADRESA', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
+    callbook.drop(columns=['SUFIXUL', 'ADRESA', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
 
 # Utils
 
@@ -205,6 +206,10 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
         logger.info('All messages have been sent.')
 
 async def callsign_info_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+    global callbook
+    if callbook is None:
+        await update.message.reply_text("Callbook could not be loaded.")
+        return
     if update.effective_chat.type == 'private':
             await update.message.reply_text('Bot does not work in private chat.')
             return
