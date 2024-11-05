@@ -30,6 +30,8 @@ TOPIC_ID = int(os.getenv('TOPIC_ID'))
 if not TOPIC_ID:
     raise ValueError("Topic ID not provided")
 
+USER_ID_LIST = (os.getenv('USER_ID_LIST'))
+
 logger.info('Environmental variables loaded successfully.')
 
 # path_to_dir = os.path.dirname(os.path.abspath(__file__))
@@ -93,11 +95,11 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
                                         parse_mode='HTML')
 
 async def get_BOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
     
-    if update.message.message_thread_id == TOPIC_ID:
+    if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         ok, df = dc.centraliseBOTA('https://www.beachesontheair.com/activations/announcements')
 
         if ok == 0:
@@ -122,11 +124,11 @@ async def get_BOTA_command(update: telegram.Update, context: telegram.ext.Contex
     logger.info('All messages have been sent.')
 
 async def get_POTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
     
-    if update.message.message_thread_id == TOPIC_ID:
+    if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         if context.args:
             filterPOTA = os.getenv(context.args[0].upper() + '_POTA')
             if not filterPOTA:
@@ -166,11 +168,11 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
     logger.info('All messages have been sent.')
 
 async def get_SOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
     
-    if update.message.message_thread_id == TOPIC_ID:
+    if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         if context.args:
             filterSOTA = os.getenv(context.args[0].upper() + '_SOTA')
             if not filterSOTA:
@@ -212,11 +214,11 @@ async def callsign_info_command(update: telegram.Update, context: telegram.ext.C
     if callbook is None:
         await update.message.reply_text("Callbook could not be loaded.")
         return
-    if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
     
-    if update.message.message_thread_id == TOPIC_ID:
+    if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         if not context.args:
             await update.message.reply_text('Please provide a callsign.')
             return
