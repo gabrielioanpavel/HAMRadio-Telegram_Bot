@@ -83,9 +83,10 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
     if update.message.message_thread_id == TOPIC_ID:
         await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
                                         "-- /help - Provides a list of usable commands\n"
-                                        "-- /get_bota - Provides a list of the future BOTA activations\n"
-                                        "-- /get_pota - Provides a list of the most recent spotted POTA activators\n"
-                                        "-- /get_sota - Provides a list of the most recent spotted SOTA activators\n\n"
+                                        "-- /get_bota <FILTER>- Provides a list of the future BOTA activations\n"
+                                        "-- /get_pota <FILTER>- Provides a list of the most recent spotted POTA activators\n"
+                                        "-- /get_sota <FILTER>- Provides a list of the most recent spotted SOTA activators\n"
+                                        "-- /callsign <CALLSIGN> - Provides information about the specified operator. Only works for Romanian operators!\n\n"
                                         "<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
                                         "<b>Available filters:</b>\n"
                                         "-- EU - Europe\n"
