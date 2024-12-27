@@ -94,7 +94,7 @@ def most_recent():
 
 	park = df.tail(1)
     
-	message = "<b><u>Latest park:</b></u>\nReference: " + str(park['reference']) + "\nName: " + str(park['name']) + "\nCoordinates: " + str(park['latitude']) + \
+	message = "<b><u>Latest park:</u></b>\nReference: " + str(park['reference']) + "\nName: " + str(park['name']) + "\nCoordinates: " + str(park['latitude']) + \
     		  " " + str(park['longitude']) + "\nLocationDesc: " + str(park['locationDesc'])
     
 	return message
