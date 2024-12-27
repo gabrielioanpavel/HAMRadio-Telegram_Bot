@@ -90,8 +90,9 @@ def most_recent():
 		nums.append(num)
 
 	park = df.iloc[-1]
+	url = 'https://pota.app/#/park/' + park['reference']
     
-	message = f"<b><u>Latest park:</u></b>\nReference: {park['reference']}\nName: {park['name']}\nCoordinates: {park['latitude']} {park['longitude']}\nLocationDesc: {park['locationDesc']}"
+	message = f"<b><u>Latest park:</u></b>\nReference: <a href='{url}'>[ {park['reference']} ]</a>\nName: {park['name']}\nCoordinates: {park['latitude']} {park['longitude']}\nLocationDesc: {park['locationDesc']}"
     
 	return message
 
@@ -177,7 +178,7 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
                 locationDesc = row['locationDesc']
                 comment = row['comments']
 
-                urlPark = 'https://pota.app/#/park/'+ reference
+                urlPark = 'https://pota.app/#/park/' + reference
                 urlActivator = 'https://www.qrz.com/db/' + activator
 
                 await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating park <a href='{urlPark}'><b>[ {reference} ]</b></a> - <i>{name}</i>\n\n"
