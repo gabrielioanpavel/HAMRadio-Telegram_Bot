@@ -118,8 +118,7 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
                                         parse_mode='HTML')
 
 async def get_latest_park_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
-    if update.message.message_thread_id == TOPIC_ID:
-        await update.message.reply_text(most_recent(), parse_mode='HTML')
+    await update.message.reply_text(most_recent(), parse_mode='HTML')
 
 async def get_BOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
