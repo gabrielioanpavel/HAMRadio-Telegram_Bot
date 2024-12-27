@@ -88,14 +88,10 @@ def most_recent():
 		num = num[3:]
 		num = int(num)
 		nums.append(num)
-	for i in range(len(nums) - 1):
-		if i+1 not in nums:
-			print(i+1)
 
-	park = df.tail(1)
+	park = df.iloc[-1]
     
-	message = "<b><u>Latest park:</u></b>\nReference: " + str(park['reference']) + "\nName: " + str(park['name']) + "\nCoordinates: " + str(park['latitude']) + \
-    		  " " + str(park['longitude']) + "\nLocationDesc: " + str(park['locationDesc'])
+	message = f"<b><u>Latest park:</u></b>\nReference: {park['reference']}\nName: {park['name']}\nCoordinates: {park['latitude']} {park['longitude']}\nLocationDesc: {park['locationDesc']}"
     
 	return message
 
