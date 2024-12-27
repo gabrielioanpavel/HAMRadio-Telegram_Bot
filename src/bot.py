@@ -8,6 +8,7 @@ import telegram.ext
 from time import sleep
 import asyncio
 import httpx
+import requests
 
 logger = setup_logger()
 
@@ -77,6 +78,27 @@ async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_m
             break
     logger.error(f"Failed to send message after {max_retries} attempts.")
 
+def most_recent():
+	r = requests.get('https://api.pota.app/program/parks/RO')
+	data = r.json()
+	df = pd.DataFrame(data)
+	nums = []
+	for index, row in df.iterrows():
+		num = row['reference']
+		num = num[3:]
+		num = int(num)
+		nums.append(num)
+	for i in range(len(nums) - 1):
+		if i+1 not in nums:
+			print(i+1)
+
+	park = df.tail(1)
+    
+	message = "<b><u>Latest park:</b></u>\nReference: " + park['reference'] + "\nName: " + park['name'] + "\nCoordinates: " + park['latitude'] + \
+    		  " " + park['longitude'] + "\nLocationDesc: " + park['LocationDesc']
+    
+	return message
+
 # Commands
 
 async def help_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
@@ -94,6 +116,10 @@ async def help_command(update: telegram.Update, conext: telegram.ext.ContextType
                                         "-- US - United States\n"
                                         "-- JA - Japan",
                                         parse_mode='HTML')
+
+async def get_latest_park_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
+    if update.message.message_thread_id == TOPIC_ID:
+        await update.message.reply_text(most_recent(), parse_mode='HTML')
 
 async def get_BOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
@@ -335,7 +361,7 @@ async def auto_spot(app):
 async def scheduler(app):
     while True:
         await auto_spot(app)
-        await asyncio.sleep(180)
+        await asyncio.sleep(60)
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
@@ -343,6 +369,7 @@ if __name__ == '__main__':
 
     # Commands
     app.add_handler(telegram.ext.CommandHandler('help', help_command))
+    app.add_handler(telegram.ext.CommandHandler('latest', get_latest_park_command))
     app.add_handler(telegram.ext.CommandHandler('get_BOTA', get_BOTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
     app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
