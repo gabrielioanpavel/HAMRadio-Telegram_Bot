@@ -55,7 +55,7 @@ except Exception as e:
     logger.error(f"An unexpected error occurred: {e}")
 else:
     logger.info('Callbook successfully loaded.')
-    callbook.drop(columns=['SUFIXUL', 'ADRESA', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
+    callbook.drop(columns=['SUFIXUL', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
 
 # Utils
 
