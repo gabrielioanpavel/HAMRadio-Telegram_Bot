@@ -320,6 +320,11 @@ async def auto_spot(app):
                     act_pota[row['activator']] = (row['reference'], row['frequency'])
                     await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
                     sent = True
+                    continue
+                if "QRT" in row['comments']:
+                    act_pota[row['activator']] = (row['reference'], row['frequency'])
+                    await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
+                    sent = True
             if sent:
                 logger.info("Auto spot messages sent successfully.")
     except Exception as e:
@@ -346,6 +351,11 @@ async def auto_spot(app):
                     sent = True
                     continue
                 if abs(int(act_pota[row['activatorCallsign']][1]) - int(row['frequency'])) >= 999:
+                    act_sota[row['activatorCallsign']] = (row['summitCode'], row['frequency'])
+                    await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
+                    sent = True
+                    continue
+                if "QRT" in row['comments']:
                     act_sota[row['activatorCallsign']] = (row['summitCode'], row['frequency'])
                     await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
                     sent = True
