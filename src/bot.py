@@ -91,9 +91,9 @@ def most_recent():
 
 	park = df.iloc[-1]
 	url = 'https://pota.app/#/park/' + park['reference']
-    
+
 	message = f"<b><u>Latest park:</u></b>\nReference: <a href='{url}'>[ {park['reference']} ]</a>\nName: {park['name']}\nCoordinates: {park['latitude']} {park['longitude']}\nLocationDesc: {park['locationDesc']}"
-    
+
 	return message
 
 # Commands
@@ -121,14 +121,14 @@ async def get_BOTA_command(update: telegram.Update, context: telegram.ext.Contex
     if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
-    
+
     if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         ok, df = dc.centraliseBOTA('https://www.beachesontheair.com/activations/announcements')
 
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
-        
+
         if df.empty:
             await update.message.reply_text('No activators found.')
         else:
@@ -150,7 +150,7 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
     if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
-    
+
     if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         if context.args:
             filterPOTA = os.getenv(context.args[0].upper() + '_POTA')
@@ -164,7 +164,7 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
-        
+
         if df.empty:
             await update.message.reply_text('No activators found.')
         else:
@@ -194,7 +194,7 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
     if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
-    
+
     if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         if context.args:
             filterSOTA = os.getenv(context.args[0].upper() + '_SOTA')
@@ -208,7 +208,7 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
         if ok == 0:
             await update.message.reply_text('An error occoured.')
             return
-        
+
         if df.empty:
             await update.message.reply_text('No activators found.')
         else:
@@ -240,12 +240,12 @@ async def callsign_info_command(update: telegram.Update, context: telegram.ext.C
     if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
             await update.message.reply_text('Bot does not work in private chat.')
             return
-    
+
     if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
         if not context.args:
             await update.message.reply_text('Please provide a callsign.')
             return
-        
+
         if len(context.args) > 1:
             await update.message.reply_text('Too many arguments.')
         else:
@@ -319,12 +319,12 @@ async def auto_spot(app):
                 if abs(int(act_pota[row['activator']][1]) - int(row['frequency'])) >= 999:
                     act_pota[row['activator']] = (row['reference'], row['frequency'])
                     await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
-                    sent = True                
+                    sent = True
             if sent:
                 logger.info("Auto spot messages sent successfully.")
     except Exception as e:
         logger.error(f"Auto spot error: {e}")
-    
+
     sent = False
     try:
         _, df = dc.centraliseSOTA()
@@ -357,7 +357,7 @@ async def auto_spot(app):
 async def scheduler(app):
     while True:
         await auto_spot(app)
-        await asyncio.sleep(30)
+        await asyncio.sleep(15)
 
 if __name__ == '__main__':
     logger.info('Starting bot...')
