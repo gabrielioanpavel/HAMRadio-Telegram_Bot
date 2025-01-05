@@ -321,7 +321,9 @@ async def auto_spot(app):
                     await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
                     sent = True
                     continue
-                if row['comments'] != act_pota[row['activator']][2]:
+                if ('QRT' in row['comments'].upper() and 'QRT' not in act_pota[row['activator']][2].upper()) or \
+                   ('QRV' in row['comments'].upper() and 'QRV' not in act_pota[row['activator']][2].upper()) or \
+                   ('QSY' in row['comments'].upper() and 'QSY' not in act_pota[row['activator']][2].upper()):
                     act_pota[row['activator']] = (row['reference'], row['frequency'], row['comments'])
                     await send_msg_POTA(row['activator'], row['frequency'], row['reference'], row['mode'], row['name'], row['locationDesc'], row['comments'])
                     sent = True
@@ -355,7 +357,9 @@ async def auto_spot(app):
                     await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
                     sent = True
                     continue
-                if row['comments'] != act_sota[row['activatorCallsign']][2]:
+                if ('QRT' in row['comments'].upper() and 'QRT' not in act_sota[row['activatorCallsign']][2].upper()) or \
+                   ('QRV' in row['comments'].upper() and 'QRV' not in act_sota[row['activatorCallsign']][2].upper()) or \
+                   ('QSY' in row['comments'].upper() and 'QSY' not in act_sota[row['activatorCallsign']][2].upper()):
                     act_sota[row['activatorCallsign']] = (row['summitCode'], row['frequency'], row['comments'])
                     await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
                     sent = True
