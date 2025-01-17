@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from logging_config import setup_logger
 import telegram
 import telegram.ext
+import telegram.error
 from time import sleep
 import asyncio
 import httpx
@@ -65,18 +66,31 @@ def getTime(ts):
     hour = ts[i+1:]
     return (date, hour)
 
-async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_mode='HTML', max_retries=3):
+from httpx import ConnectTimeout, ConnectError
+from telegram.error import NetworkError, TimedOut, RetryAfter
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_mode='HTML', max_retries=5):
     for attempt in range(max_retries):
         try:
             await app.bot.send_message(chat_id=chat_id, message_thread_id=message_thread_id, text=text, parse_mode=parse_mode)
+            logger.info(f"Message sent successfully to chat_id={chat_id} on attempt {attempt + 1}.")
             return
-        except httpx.ConnectTimeout as e:
-            logger.error(f"Connection timeout on attempt {attempt + 1}/{max_retries}: {e}")
+        except (ConnectTimeout, ConnectError, NetworkError, TimedOut) as e:
+            logger.warning(f"Network error on attempt {attempt + 1}/{max_retries}: {e}. Retrying...")
             await asyncio.sleep(2 ** attempt)
+        except RetryAfter as e:
+            retry_after = int(e.retry_after) if hasattr(e, 'retry_after') else 5
+            logger.warning(f"Rate limited by Telegram. Retrying after {retry_after} seconds.")
+            await asyncio.sleep(retry_after)
         except Exception as e:
-            logger.error(f"Unexpected error on attempt {attempt + 1}/{max_retries}: {e}")
-            break
-    logger.error(f"Failed to send message after {max_retries} attempts.")
+            logger.error(f"Unexpected error on attempt {attempt + 1}/{max_retries}: {e}. Retrying...")
+            await asyncio.sleep(2 ** attempt)
+    logger.error(f"Failed to send message after {max_retries} attempts. Giving up.")
+
 
 def most_recent():
 	r = requests.get('https://api.pota.app/program/parks/RO')
