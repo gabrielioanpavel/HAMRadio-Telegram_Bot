@@ -12,8 +12,6 @@ import httpx
 import requests
 import aiofiles
 
-os.system('touch signal.txt')
-
 # Wait for OS to connect to internet
 sleep(300)
 
@@ -391,10 +389,6 @@ async def auto_spot(app):
 async def scheduler(app):
 	while True:
 		await auto_spot(app)
-
-		async with aiofiles.open('signal.txt', 'a') as file:
-			await file.write('Signal\n')
-
 		await asyncio.sleep(15)
 
 if __name__ == '__main__':
