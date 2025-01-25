@@ -12,6 +12,11 @@ import httpx
 import requests
 import aiofiles
 
+os.system('touch signal.txt')
+
+# Wait for OS to connect to internet
+sleep(300)
+
 logger = setup_logger()
 
 logger.info('Loading environmental variables...')
@@ -386,7 +391,7 @@ async def auto_spot(app):
 async def scheduler(app):
 	while True:
 		await auto_spot(app)
-		
+
 		async with aiofiles.open('signal.txt', 'a') as file:
 			await file.write('Signal\n')
 

@@ -1,6 +1,9 @@
 import os
 import time
 
+time.sleep(300)
+os.system('touch signal.txt')
+
 while True:
 	ok = False
 
@@ -11,7 +14,7 @@ while True:
 				pass
 
 			break
-		
+
 		time.sleep(30)
 
 	if not ok:
