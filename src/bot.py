@@ -13,7 +13,7 @@ import requests
 import aiofiles
 
 # Wait for OS to connect to internet
-sleep(300)
+sleep(30)
 
 logger = setup_logger()
 
