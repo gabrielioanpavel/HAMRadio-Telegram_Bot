@@ -16,6 +16,7 @@ import aiofiles
 sleep(300)
 
 logger = setup_logger()
+logger = logging.getLogger(__name__)
 
 logger.info('Loading environmental variables...')
 load_dotenv()
