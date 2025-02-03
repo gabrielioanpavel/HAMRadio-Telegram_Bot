@@ -70,13 +70,6 @@ def getTime(ts):
 	hour = ts[i+1:]
 	return (date, hour)
 
-from httpx import ConnectTimeout, ConnectError
-from telegram.error import NetworkError, TimedOut, RetryAfter
-import asyncio
-import logging
-
-logger = logging.getLogger(__name__)
-
 async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_mode='HTML', max_retries=5):
 	for attempt in range(max_retries):
 		try:
