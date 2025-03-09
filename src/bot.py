@@ -111,37 +111,52 @@ def most_recent():
 
 async def help_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
 	if update.message.message_thread_id == TOPIC_ID:
-		await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
-										"-- /help - Provides a list of usable commands\n"
-										"-- /get_bota [FILTER]- Provides a list of the future BOTA activations\n"
-										"-- /get_pota [FILTER]- Provides a list of the most recent spotted POTA activators\n"
-										"-- /get_sota [FILTER]- Provides a list of the most recent spotted SOTA activators\n"
-										"-- /callsign [CALLSIGN] - Provides information about the specified operator. Only works for Romanian operators!\n\n"
-										"<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
-										"<b>Available filters:</b>\n"
-										"-- EU - Europe\n"
-										"-- RO - Romania\n"
-										"-- US - United States\n"
-										"-- JA - Japan",
-										parse_mode='HTML')
+		try:
+			await update.message.reply_text("<b><u>Here is a list of commands you can use:</u></b>\n\n"
+											"-- /help - Provides a list of usable commands\n"
+											"-- /get_bota [FILTER]- Provides a list of the future BOTA activations\n"
+											"-- /get_pota [FILTER]- Provides a list of the most recent spotted POTA activators\n"
+											"-- /get_sota [FILTER]- Provides a list of the most recent spotted SOTA activators\n"
+											"-- /callsign [CALLSIGN] - Provides information about the specified operator. Only works for Romanian operators!\n\n"
+											"<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
+											"<b>Available filters:</b>\n"
+											"-- EU - Europe\n"
+											"-- RO - Romania\n"
+											"-- US - United States\n"
+											"-- JA - Japan",
+											parse_mode='HTML')
+		except Exception as e:
+			logger.info("Failed to send message: " + e)
 
 async def get_latest_park_command(update: telegram.Update, conext: telegram.ext.ContextTypes.DEFAULT_TYPE):
-	await update.message.reply_text(most_recent(), parse_mode='HTML')
+	try:
+		await update.message.reply_text(most_recent(), parse_mode='HTML')
+	except Exception as e:
+			logger.info("Failed to send message: " + e)
 
 async def get_BOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
 	if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
-			await update.message.reply_text('Bot does not work in private chat.')
+			try:
+				await update.message.reply_text('Bot does not work in private chat.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 	if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
 		ok, df = dc.centraliseBOTA('https://www.beachesontheair.com/activations/announcements')
 
 		if ok == 0:
-			await update.message.reply_text('An error occoured.')
+			try:
+				await update.message.reply_text('An error occoured.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 		if df.empty:
-			await update.message.reply_text('No activators found.')
+			try:
+				await update.message.reply_text('No activators found.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 		else:
 			for index, row in df.iterrows():
 				logger.info('Sending message...')
@@ -151,33 +166,48 @@ async def get_BOTA_command(update: telegram.Update, context: telegram.ext.Contex
 
 				urlActivator = 'https://www.qrz.com/db/' + activator
 
-				await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> will be activating beach <b>[ {location} ]</b>\n\n"
-												f"Date and time: <b>{date}</b>\n", parse_mode='HTML')
+				try:
+					await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> will be activating beach <b>[ {location} ]</b>\n\n"
+													f"Date and time: <b>{date}</b>\n", parse_mode='HTML')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
 				sleep(0.5)
 
 	logger.info('All messages have been sent.')
 
 async def get_POTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
 	if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
-			await update.message.reply_text('Bot does not work in private chat.')
+			try:
+				await update.message.reply_text('Bot does not work in private chat.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 	if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
 		if context.args:
 			filterPOTA = os.getenv(context.args[0].upper() + '_POTA')
 			if not filterPOTA:
-				await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
+				try:
+					await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
 				return
 			ok, df = dc.centralisePOTA(filterPOTA)
 		else:
 			ok, df = dc.centralisePOTA()
 
 		if ok == 0:
-			await update.message.reply_text('An error occoured.')
+			try:
+				await update.message.reply_text('An error occoured.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 		if df.empty:
-			await update.message.reply_text('No activators found.')
+			try:
+				await update.message.reply_text('No activators found.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 		else:
 			for index, row in df.iterrows():
 				logger.info('Sending message...')
@@ -203,25 +233,37 @@ async def get_POTA_command(update: telegram.Update, context: telegram.ext.Contex
 
 async def get_SOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
 	if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
-			await update.message.reply_text('Bot does not work in private chat.')
+			try:
+				await update.message.reply_text('Bot does not work in private chat.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 	if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
 		if context.args:
 			filterSOTA = os.getenv(context.args[0].upper() + '_SOTA')
 			if not filterSOTA:
-				await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
+				try:
+					await update.message.reply_text(f'Argument {context.args[0]} not recognised.')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
 				return
 			ok, df = dc.centraliseSOTA(filterSOTA)
 		else:
 			ok, df = dc.centraliseSOTA()
 
 		if ok == 0:
-			await update.message.reply_text('An error occoured.')
+			try:
+				await update.message.reply_text('An error occoured.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 		if df.empty:
-			await update.message.reply_text('No activators found.')
+			try:
+				await update.message.reply_text('No activators found.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 		else:
 			for index, row in df.iterrows():
 				logger.info('Sending message...')
@@ -234,11 +276,15 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 				frequency = row['frequency']
 				mode = row['mode']
 				urlActivator = 'https://www.qrz.com/db/' + row['activatorCallsign']
-				await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> - <i>{actName}</i> is now activating summit <b>[ {summitCode} ]</b> - <i>{summitDetails}</i>\n\n"
-												f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
-												f"Frequency: <b>{frequency}</b>\n"
-												f"Mode: <b>{mode}</b>\n"
-												f"Activator's comment: <b>{comment}</b>", parse_mode='HTML')
+
+				try:
+					await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> - <i>{actName}</i> is now activating summit <b>[ {summitCode} ]</b> - <i>{summitDetails}</i>\n\n"
+													f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
+													f"Frequency: <b>{frequency}</b>\n"
+													f"Mode: <b>{mode}</b>\n"
+													f"Activator's comment: <b>{comment}</b>", parse_mode='HTML')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
 				sleep(0.5)
 
 		logger.info('All messages have been sent.')
@@ -246,24 +292,39 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 async def callsign_info_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
 	global callbook
 	if callbook is None:
-		await update.message.reply_text("Callbook could not be loaded.")
+		try:
+			await update.message.reply_text("Callbook could not be loaded.")
+		except Exception as e:
+			logger.info("Failed to send message: " + e)
 		return
 	if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
-			await update.message.reply_text('Bot does not work in private chat.')
+			try:
+				await update.message.reply_text('Bot does not work in private chat.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 	if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
 		if not context.args:
-			await update.message.reply_text('Please provide a callsign.')
+			try:
+				await update.message.reply_text('Please provide a callsign.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 			return
 
 		if len(context.args) > 1:
-			await update.message.reply_text('Too many arguments.')
+			try:
+				await update.message.reply_text('Too many arguments.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
 		else:
 			callsign = context.args[0].strip().upper()
 			index = callbook[callbook['INDICATIVUL'].str.strip().str.upper() == callsign].index
 			if len(index) == 0:
-				await update.message.reply_text('Callsign not found.')
+				try:
+					await update.message.reply_text('Callsign not found.')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
 			else:
 				row = callbook.loc[index[0]]
 				name = row['TITULARUL']
@@ -271,11 +332,15 @@ async def callsign_info_command(update: telegram.Update, context: telegram.ext.C
 				loc = row['LOCALITATEA']
 				exp = row['DATA EXPIRARII']
 				url = 'https://www.ancom.ro/radioamatori_2899'
-				await update.message.reply_text(f"Showing information about operator: <b>{name} - [ {callsign} ]</b>\n"
-												f"Class: <b>{cls}</b>\n"
-												f"Location: <b>{loc}</b>\n"
-												f"Expiration date: <b>{exp}</b>\n"
-												f"Source: <a href='{url}'><b>ANCOM</b></a>", parse_mode='HTML')
+
+				try:
+					await update.message.reply_text(f"Showing information about operator: <b>{name} - [ {callsign} ]</b>\n"
+													f"Class: <b>{cls}</b>\n"
+													f"Location: <b>{loc}</b>\n"
+													f"Expiration date: <b>{exp}</b>\n"
+													f"Source: <a href='{url}'><b>ANCOM</b></a>", parse_mode='HTML')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
 
 # Automatic Spotting
 
