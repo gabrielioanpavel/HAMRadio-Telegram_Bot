@@ -96,6 +96,28 @@ def centraliseSOTA(filterSOTA=os.getenv('FILTER_SOTA')):
         return (1, df)
     else:
         return (0, df)
+    
+def centraliseWWBOTA():
+    logger.info('Fetching data from [https://api.wwbota.org/spots/]...')
+    url = 'https://api.wwbota.org/spots/'
+    data = fetchData(url)
+    df = pd.DataFrame
+    if data:
+        logger.info('Fetching successful, building DataFrame')
+
+        # Construction of DataFrame
+        df = pd.DataFrame(data)
+        df.drop(['spotter', 'type'], axis=1, inplace=True)
+        df.drop_duplicates(inplace=True)
+        df["reference"] = df["references"].apply(
+            lambda refs: refs[0]["reference"] if refs else None
+        )
+        df.drop("references", axis=1, inplace=True)
+
+        logger.info('Operation complete.')
+        return (1, df)
+    else:
+        return (0, df)
 
 def centraliseBOTA(url):
     try:

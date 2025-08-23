@@ -66,8 +66,10 @@ else:
 
 def getTime(ts):
 	i = ts.index('T')
+
 	date = ts[:i]
-	hour = ts[i+1:]
+	hour = ts[i+1:].split('.')[0].rstrip('Z')
+
 	return (date, hour)
 
 async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_mode='HTML', max_retries=5):
@@ -118,6 +120,7 @@ async def help_command(update: telegram.Update, context: telegram.ext.ContextTyp
                 "-- /get_bota [FILTER] - Provides a list of the future BOTA activations\n"
                 "-- /get_pota [FILTER] - Provides a list of the most recent spotted POTA activators\n"
                 "-- /get_sota [FILTER] - Provides a list of the most recent spotted SOTA activators\n"
+				"-- /get_wwbota - Provides a list of the most recent spotted WWBOTA activators\n"
                 "-- /callsign [CALLSIGN] - Provides information about the specified operator. Only works for Romanian operators!\n"
                 "-- /latest - Provide the latest park added\n\n"
                 "<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
@@ -282,6 +285,52 @@ async def get_SOTA_command(update: telegram.Update, context: telegram.ext.Contex
 
 				try:
 					await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> - <i>{actName}</i> is now activating summit <b>[ {summitCode} ]</b> - <i>{summitDetails}</i>\n\n"
+													f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
+													f"Frequency: <b>{frequency}</b>\n"
+													f"Mode: <b>{mode}</b>\n"
+													f"Activator's comment: <b>{comment}</b>", parse_mode='HTML')
+				except Exception as e:
+					logger.info("Failed to send message: " + e)
+				sleep(0.5)
+
+		logger.info('All messages have been sent.')
+
+async def get_WWBOTA_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+	if update.effective_chat.type == 'private' and str(update.message.from_user.id) not in USER_ID_LIST:
+			try:
+				await update.message.reply_text('Bot does not work in private chat.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
+			return
+
+	if update.message.message_thread_id == TOPIC_ID or str(update.message.from_user.id) in USER_ID_LIST:
+		ok, df = dc.centraliseWWBOTA()
+
+		if ok == 0:
+			try:
+				await update.message.reply_text('An error occoured.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
+			return
+
+		if df.empty:
+			try:
+				await update.message.reply_text('No activators found.')
+			except Exception as e:
+				logger.info("Failed to send message: " + e)
+		else:
+			for index, row in df.iterrows():
+				logger.info('Sending message...')
+				timestamp = getTime(row['time'])
+				activator = row['call']
+				comment = row['comment']
+				ref = row['reference']
+				frequency = row['freq']
+				mode = row['mode']
+				urlActivator = 'https://www.qrz.com/db/' + row['call']
+
+				try:
+					await update.message.reply_text(f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating bunker <b>[ {ref} ]</b>\n\n"
 													f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
 													f"Frequency: <b>{frequency}</b>\n"
 													f"Mode: <b>{mode}</b>\n"
@@ -462,6 +511,7 @@ if __name__ == '__main__':
 	app.add_handler(telegram.ext.CommandHandler('get_BOTA', get_BOTA_command))
 	app.add_handler(telegram.ext.CommandHandler('get_POTA', get_POTA_command))
 	app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
+	app.add_handler(telegram.ext.CommandHandler('get_WWBOTA', get_WWBOTA_command))
 	app.add_handler(telegram.ext.CommandHandler('callsign', callsign_info_command))
 
 	# Automatic spotting
