@@ -419,12 +419,27 @@ async def send_msg_SOTA(timeStamp, activatorCallsign, activatorName, comments, s
 	await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
 	await asyncio.sleep(0.5)
 
+async def send_msg_WWBOTA(timestamp, activator, comment, ref, frequency, mode):
+	urlActivator = 'https://www.qrz.com/db/' + activator
+
+	message = (f"<a href='{urlActivator}'><b>[ {activator} ]</b></a> is now activating bunker <b>[ {ref} ]</b>\n\n"
+				f"Posted at: <b>{timestamp[0]} - {timestamp[1]}</b>\n"
+				f"Frequency: <b>{frequency}</b>\n"
+				f"Mode: <b>{mode}</b>\n"
+				f"Activator's comment: <b>{comment}</b>")
+	await send_message_with_retry(app, CHAT_ID, TOPIC_ID, message)
+	await asyncio.sleep(0.5)
+
 act_pota = {}
 act_sota = {}
+act_wwbota = {}
+
 async def auto_spot(app):
 	global act_pota
 	global act_sota
+	global act_wwbota
 	sent = False
+
 	try:
 		_, df = dc.centralisePOTA()
 		flt = os.getenv('AUTO_SPOT')
@@ -461,6 +476,7 @@ async def auto_spot(app):
 		logger.error(f"Auto spot error: {e}")
 
 	sent = False
+
 	try:
 		_, df = dc.centraliseSOTA()
 		flt = os.getenv('AUTO_SPOT')
@@ -490,6 +506,43 @@ async def auto_spot(app):
 				   ('QSY' in row['comments'].upper() and 'QSY' not in act_sota[row['activatorCallsign']][2].upper()):
 					act_sota[row['activatorCallsign']] = (row['summitCode'], row['frequency'], row['comments'])
 					await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
+					sent = True
+			if sent:
+				logger.info("Auto spot messages sent successfully.")
+	except Exception as e:
+		logger.error(f"Auto spot error: {e}")
+
+	sent = False
+
+	try:
+		_, df = dc.centraliseWWBOTA()
+		flt = os.getenv('AUTO_SPOT')
+		if flt:
+			flt = flt.split()
+			mask = df['call'].apply(lambda x: any(activator in x for activator in flt))
+			df = df[mask].reset_index(drop=True)
+
+			for index, row in df.iterrows():
+				if row['call'] not in act_wwbota:
+					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
+					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
+					sent = True
+					continue
+				if act_wwbota[row['call']][0] != row['reference']:
+					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
+					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
+					sent = True
+					continue
+				if abs(int(act_pota[row['call']][1]) - int(row['freq'])) >= 999:
+					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
+					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
+					sent = True
+					continue
+				if ('QRT' in row['comment'].upper() and 'QRT' not in act_wwbota[row['call']][2].upper()) or \
+				   ('QRV' in row['comment'].upper() and 'QRV' not in act_wwbota[row['call']][2].upper()) or \
+				   ('QSY' in row['comment'].upper() and 'QSY' not in act_wwbota[row['call']][2].upper()):
+					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
+					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
 					sent = True
 			if sent:
 				logger.info("Auto spot messages sent successfully.")
