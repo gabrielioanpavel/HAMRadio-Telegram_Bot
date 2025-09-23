@@ -7,30 +7,15 @@ BOTA, POTA and SOTA spotting in the form of commands and auto-spotting for selec
 
 ### Dependencies
 
-* Python 3
-* pip
-* All used Python modules are in requirements.txt
+* Docker
 
 ### Installing
 
-* Make sure you have Python3 and pip installed
 * Clone the repository
-* Install the requirements:
+* Build the `Docker` image:
 
 ```bash
-pip install -r requirements.txt
-```
-
-* Give execute permissions to the shell scripts:
-
-```bash
-chmod +x *.sh
-```
-
-* Install the Chrome Driver so the BOTA function will work:
-
-```bash
-./chromedriver_installation.sh
+sudo docker-compose build
 ```
 
 ### Setup
@@ -82,17 +67,20 @@ should coincide with **SOMETHING** (i.e. `/get_pota EU` for the above European f
 Run the following command in the terminal to start the bot:
 
 ```bash
-./start_bot.sh
+sudo docker-compose up -d
 ```
 
-You will receive informational logs in the console and error logs in the `log.txt` file.
+Logs will be written in `logs/`, marked with a timestamp representing the date when the bot was started.
 
 ### Usage
 
-* Use the `/help` command to display the available commands.
-* Use `/get_bota` to get a list of future BOTA activations.
-* Use `/get_pota` to get the latest information on POTA activations.
-* Use `/get_sota` to get the latest information on SOTA activations.
+* `/help` - display the available commands.
+* `/get_bota` - get a list of future BOTA activations.
+* `/get_pota` - get the latest information on POTA activations.
+* `/get_sota` - get the latest information on SOTA activations.
+* `/get_wwbota` - get the latest information on WWBOTA activations.
+* `/callsign [CALLSIGN]` - get details about an operator.
+* `/latest` - get the latest added park.
 * You may provide an argument to the `/get_pota` or `/get_sota` commands to represent a certain filter that was created in `.env`.
 
 ## Contributing

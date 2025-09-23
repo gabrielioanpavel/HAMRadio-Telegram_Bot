@@ -18,7 +18,6 @@ sleep(30)
 logger = setup_logger()
 
 logger.info('Loading environmental variables...')
-load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:

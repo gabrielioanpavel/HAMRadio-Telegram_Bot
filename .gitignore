@@ -28,6 +28,7 @@ __pycache__/
 *.sqlite
 *.env
 log.txt
+logs/
 
 # OS generated files #
 ######################
