@@ -1,0 +1,18 @@
+FROM python:3.11-alpine
+
+RUN apk add --no-cache \
+    bash wget unzip curl chromium chromium-chromedriver \
+    && rm -rf /var/cache/apk/*
+
+ENV CHROME_BIN=/usr/bin/chromium-browser CHROMEDRIVER_PATH=/usr/bin/chromedriver
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN mkdir -p logs
+
+CMD ["sh", "-c", "LOG_FILE=logs/$(date +%Y-%m-%d_%H-%M-%S).log ; python3 src/bot.py >> $LOG_FILE 2>&1 ; ls -1t logs/ | tail -n +10 | xargs -I {} rm -- logs/{}"]

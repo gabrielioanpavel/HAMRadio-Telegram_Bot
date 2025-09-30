@@ -1,6 +1,8 @@
 services:
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
     container_name: HAMRadio-Telegram_BOT
     env_file:
       - .env
