@@ -495,7 +495,7 @@ async def auto_spot(app):
 					await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
 					sent = True
 					continue
-				if abs(int(act_pota[row['activatorCallsign']][1]) - int(row['frequency'])) >= 999:
+				if abs(int(act_sota[row['activatorCallsign']][1]) - int(row['frequency'])) >= 999:
 					act_sota[row['activatorCallsign']] = (row['summitCode'], row['frequency'], row['comments'])
 					await send_msg_SOTA(row['timeStamp'], row['activatorCallsign'], row['activatorName'], row['comments'], row['summitCode'], row['summitDetails'], row['frequency'], row['mode'])
 					sent = True
@@ -532,7 +532,7 @@ async def auto_spot(app):
 					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
 					sent = True
 					continue
-				if abs(int(act_pota[row['call']][1]) - int(row['freq'])) >= 999:
+				if abs(int(act_wwbota[row['call']][1]) - int(row['freq'])) >= 999:
 					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
 					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
 					sent = True
