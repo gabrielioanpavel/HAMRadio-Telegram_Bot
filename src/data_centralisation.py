@@ -9,8 +9,17 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+
+def get_chromedriver_path():
+    """Get chromedriver path - use system driver if available (Docker), otherwise fallback to webdriver_manager."""
+    system_paths = ['/usr/bin/chromedriver', '/usr/local/bin/chromedriver']
+    for path in system_paths:
+        if os.path.exists(path):
+            return path
+    # Fallback for local development
+    from webdriver_manager.chrome import ChromeDriverManager
+    return ChromeDriverManager().install()
 import time
 
 logger = logging.getLogger('BotLogger')
@@ -98,8 +107,8 @@ def centraliseSOTA(filterSOTA=os.getenv('FILTER_SOTA')):
         return (0, df)
     
 def centraliseWWBOTA():
-    logger.info('Fetching data from [https://api.wwbota.org/spots/]...')
-    url = 'https://api.wwbota.org/spots/'
+    logger.info('Fetching data from [https://api.wwbota.net/spots/]...')
+    url = 'https://api.wwbota.net/spots/'
     data = fetchData(url)
     df = pd.DataFrame
     if data:
@@ -107,11 +116,16 @@ def centraliseWWBOTA():
 
         # Construction of DataFrame
         df = pd.DataFrame(data)
-        df.drop(['spotter', 'type'], axis=1, inplace=True)
+        df.drop(['spotter'], axis=1, inplace=True)
         df["reference"] = df["references"].apply(
             lambda refs: refs[0]["reference"] if refs else None
         )
         df.drop("references", axis=1, inplace=True)
+        # Convert 'time' to timestamp tuple (date, time) for compatibility
+        df["timestamp"] = df["time"].apply(
+            lambda t: (t.split("T")[0], t.split("T")[1].split(".")[0]) if t else ("", "")
+        )
+        df.drop("time", axis=1, inplace=True)
         df.drop_duplicates(inplace=True)
 
         logger.info('Operation complete.')
@@ -126,7 +140,12 @@ def centraliseBOTA(url):
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-software-rasterizer')
+        options.add_argument('--single-process')
+        options.add_argument('--disable-background-networking')
+        driver = webdriver.Chrome(service=Service(get_chromedriver_path()), options=options)
 
         # Get the page
         driver.get(url)

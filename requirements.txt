@@ -1,6 +1,9 @@
 aiofiles
+aiohttp
+aiohttp-sse-client
 beautifulsoup4
 httpx
+numpy<2.0
 pandas
 python-dotenv
 python-telegram-bot

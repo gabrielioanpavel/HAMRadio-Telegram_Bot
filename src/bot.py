@@ -11,6 +11,9 @@ import asyncio
 import httpx
 import requests
 import aiofiles
+import aiohttp
+from aiohttp_sse_client import client as sse_client
+import json
 
 # Wait for OS to connect to internet
 sleep(30)
@@ -90,21 +93,20 @@ async def send_message_with_retry(app, chat_id, message_thread_id, text, parse_m
 	logger.error(f"Failed to send message after {max_retries} attempts. Giving up.")
 
 
-def most_recent():
+def most_recent(count=30):
 	r = requests.get('https://api.pota.app/program/parks/RO')
 	data = r.json()
 	df = pd.DataFrame(data)
-	nums = []
-	for index, row in df.iterrows():
-		num = row['reference']
-		num = num[3:]
-		num = int(num)
-		nums.append(num)
 
-	park = df.iloc[-1]
-	url = 'https://pota.app/#/park/' + park['reference']
+	# Get last 'count' parks
+	latest_parks = df.tail(count).iloc[::-1]  # Reverse to show newest first
 
-	message = f"<b><u>Latest park:</u></b>\nReference: <a href='{url}'>[ {park['reference']} ]</a>\nName: {park['name']}\nCoordinates: {park['latitude']} {park['longitude']}\nLocationDesc: {park['locationDesc']}"
+	message = f"<b><u>Latest {count} parks added:</u></b>\n\n"
+
+	for index, park in latest_parks.iterrows():
+		url = 'https://pota.app/#/park/' + park['reference']
+		message += f"<a href='{url}'><b>[ {park['reference']} ]</b></a> - {park['name']}\n"
+		message += f"   📍 {park['locationDesc']}\n\n"
 
 	return message
 
@@ -121,7 +123,7 @@ async def help_command(update: telegram.Update, context: telegram.ext.ContextTyp
                 "-- /get_sota [FILTER] - Provides a list of the most recent spotted SOTA activators\n"
 				"-- /get_wwbota - Provides a list of the most recent spotted WWBOTA activators\n"
                 "-- /callsign [CALLSIGN] - Provides information about the specified operator. Only works for Romanian operators!\n"
-                "-- /latest - Provide the latest park added\n\n"
+                "-- /latest - Provides the latest 30 parks added\n\n"
                 "<b>/get_pota and /get_sota can be used with filters. If no filter is provided, it will default to Europe activators. Filters can be typed in lowercase or uppercase.</b>\n"
                 "<b>Available filters:</b>\n"
                 "-- EU - Europe\n"
@@ -511,42 +513,84 @@ async def auto_spot(app):
 	except Exception as e:
 		logger.error(f"Auto spot error: {e}")
 
-	sent = False
+	# WWBOTA auto-spotting is now handled by SSE listener (wwbota_sse_listener)
 
-	try:
-		_, df = dc.centraliseWWBOTA()
-		flt = os.getenv('AUTO_SPOT')
-		if flt:
-			flt = flt.split()
-			mask = df['call'].apply(lambda x: any(activator in x for activator in flt))
-			df = df[mask].reset_index(drop=True)
+async def wwbota_sse_listener(app):
+	"""Listen to WWBOTA SSE stream for real-time spots."""
+	global act_wwbota
+	flt = os.getenv('AUTO_SPOT')
+	if not flt:
+		logger.info("AUTO_SPOT not set, WWBOTA SSE listener disabled.")
+		return
+	flt = flt.split()
 
-			for index, row in df.iterrows():
-				if row['call'] not in act_wwbota:
-					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
-					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
-					sent = True
-					continue
-				if act_wwbota[row['call']][0] != row['reference']:
-					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
-					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
-					sent = True
-					continue
-				if abs(int(act_wwbota[row['call']][1]) - int(row['freq'])) >= 999:
-					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
-					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
-					sent = True
-					continue
-				if ('QRT' in row['comment'].upper() and 'QRT' not in act_wwbota[row['call']][2].upper()) or \
-				   ('QRV' in row['comment'].upper() and 'QRV' not in act_wwbota[row['call']][2].upper()) or \
-				   ('QSY' in row['comment'].upper() and 'QSY' not in act_wwbota[row['call']][2].upper()):
-					act_wwbota[row['call']] = (row['reference'], row['freq'], row['comment'])
-					await send_msg_WWBOTA(row['timestamp'], row['call'], row['comment'], row['reference'], row['freq'], row['mode'])
-					sent = True
-			if sent:
-				logger.info("Auto spot messages sent successfully.")
-	except Exception as e:
-		logger.error(f"Auto spot error: {e}")
+	url = "https://api.wwbota.net/spots/"
+	headers = {"Accept": "text/event-stream"}
+
+	while True:
+		try:
+			logger.info("Connecting to WWBOTA SSE stream...")
+			async with aiohttp.ClientSession() as session:
+				async with sse_client.EventSource(url, session=session, headers=headers) as event_source:
+					logger.info("Connected to WWBOTA SSE stream.")
+					async for event in event_source:
+						if event.data:
+							try:
+								spot = json.loads(event.data)
+								call = spot.get('call', '')
+
+								# Check if callsign is in AUTO_SPOT filter
+								if not any(activator in call for activator in flt):
+									continue
+
+								# Extract data
+								ref = spot.get('references', [{}])[0].get('reference', '') if spot.get('references') else ''
+								freq = spot.get('freq', 0)
+								mode = spot.get('mode', '')
+								spot_type = spot.get('type', '').upper()
+								comment = spot.get('comment', '')
+								time_str = spot.get('time', '')
+
+								# Parse timestamp
+								if time_str and 'T' in time_str:
+									timestamp = (time_str.split("T")[0], time_str.split("T")[1].split(".")[0])
+								else:
+									timestamp = ("", "")
+
+								# Check if we should send notification
+								should_send = False
+
+								if call not in act_wwbota:
+									act_wwbota[call] = (ref, freq, spot_type)
+									should_send = True
+								elif act_wwbota[call][0] != ref:
+									act_wwbota[call] = (ref, freq, spot_type)
+									should_send = True
+								elif abs(int(act_wwbota[call][1]) - int(freq)) >= 999:
+									act_wwbota[call] = (ref, freq, spot_type)
+									should_send = True
+								elif ('QRT' in spot_type and 'QRT' not in act_wwbota[call][2]) or \
+									 ('QRV' in spot_type and 'QRV' not in act_wwbota[call][2]) or \
+									 ('QSY' in spot_type and 'QSY' not in act_wwbota[call][2]):
+									act_wwbota[call] = (ref, freq, spot_type)
+									should_send = True
+
+								if should_send:
+									await send_msg_WWBOTA(timestamp, call, comment if comment else spot_type, ref, freq, mode)
+									logger.info(f"WWBOTA SSE: Sent spot for {call}")
+
+							except json.JSONDecodeError as e:
+								logger.debug(f"SSE non-JSON data: {event.data[:100]}")
+							except Exception as e:
+								logger.error(f"WWBOTA SSE processing error: {e}")
+
+		except asyncio.CancelledError:
+			logger.info("WWBOTA SSE listener cancelled.")
+			break
+		except Exception as e:
+			logger.error(f"WWBOTA SSE connection error: {e}")
+			logger.info("Reconnecting to WWBOTA SSE in 10 seconds...")
+			await asyncio.sleep(10)
 
 async def scheduler(app):
 	while True:
@@ -569,6 +613,7 @@ if __name__ == '__main__':
 	# Automatic spotting
 	loop = asyncio.get_event_loop()
 	loop.create_task(scheduler(app))
+	loop.create_task(wwbota_sse_listener(app))
 
 	# Polling
 	logger.info('Polling...')
