@@ -64,6 +64,25 @@ else:
 	logger.info('Callbook successfully loaded.')
 	callbook.drop(columns=['SUFIXUL', 'E-MAIL', 'DATA LIMITA A REZERVARII'], axis=1)
 
+# Load POTA database
+logger.info('Loading POTA database...')
+path_to_database = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../res/database.csv')
+path_to_database = os.path.normpath(path_to_database)
+try:
+	callbook = pd.read_csv(path_to_database)
+except FileNotFoundError:
+	logger.error(f'Could not find the file \'database.csv\'')
+except pd.errors.EmptyDataError:
+	logger.error("The file is empty.")
+except pd.errors.ParserError:
+	logger.error("Error: There was an issue parsing the CSV file.")
+except UnicodeDecodeError:
+	logger.error("Error: Could not decode the file. Try specifying a different encoding.")
+except Exception as e:
+	logger.error(f"An unexpected error occurred: {e}")
+else:
+	logger.info('Database successfully loaded.')
+
 # Utils
 
 def getTime(ts):
@@ -395,6 +414,28 @@ async def callsign_info_command(update: telegram.Update, context: telegram.ext.C
 				except Exception as e:
 					logger.info("Failed to send message: " + e)
 
+async def potadate_command(update: telegram.Update, context: telegram.ext.ContextTypes.DEFAULT_TYPE):
+	if not context.args:
+		try:
+			await update.message.reply_text('Please provide a reference.')
+		except Exception as e:
+			logger.info("Failed to send message: " + e)
+		return
+
+	if len(context.args) > 1:
+		try:
+			await update.message.reply_text('Too many arguments.')
+		except Exception as e:
+			logger.info("Failed to send message: " + e)
+	else:
+		ref = context.args[0].strip().upper()
+		db = pd.read_csv(path_to_database)
+
+		if ref not in db["reference"].values:
+			await update.message.reply_text("Park reference not found.")
+		else:
+			await update.message.reply_text(f"Park <b>{ref}</b> was added on <b>{db.loc[db["reference"] == ref, "date"].iloc[0]}</b>.", parse_mode="HTML")
+
 # Automatic Spotting
 
 async def send_msg_POTA(activator, frequency, reference, mode, name, locationDesc, comment):
@@ -609,6 +650,7 @@ if __name__ == '__main__':
 	app.add_handler(telegram.ext.CommandHandler('get_SOTA', get_SOTA_command))
 	app.add_handler(telegram.ext.CommandHandler('get_WWBOTA', get_WWBOTA_command))
 	app.add_handler(telegram.ext.CommandHandler('callsign', callsign_info_command))
+	app.add_handler(telegram.ext.CommandHandler('potadate', potadate_command))
 
 	# Automatic spotting
 	loop = asyncio.get_event_loop()
