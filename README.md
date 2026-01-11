@@ -1,92 +1,84 @@
-# Telegram Bot for POTA and SOTA information
+# HAMRadio-Telegram_Bot
 
-I created this mainly for HAM Radio operators YO3BEE and YO3DYL, but decided to create a repo for it. Its main features are
-BOTA, POTA and SOTA spotting in the form of commands and auto-spotting for selected callsigns.
+A Telegram bot that provides real-time information about BOTA, POTA, SOTA and WWBOTA activations.
 
-## Getting Started
+I created this mainly for HAM Radio operators **YO3BEE** and **YO3DYL**, but decided to open-source it. Its main features are BOTA, POTA, SOTA and WWBOTA spotting via commands, as well as auto-spotting for specific callsigns.
 
-### Dependencies
+## Features
 
-* Docker
+* **BOTA, POTA, SOTA and WWBOTA Spotting**: Get the latest spots for Beaches, Parks, Summits and Bunkers activations.
+* **Auto-Spotting**: Automatically track and announce spots for selected callsigns.
+* **Custom Filters**: Filter spots by grid squares (POTA) or country prefixes (SOTA).
+* **Dockerized**: Easy deployment using Docker and Docker Compose.
 
-### Installing
+## Prerequisites
 
-* Clone the repository
-* Build the `Docker` image:
+* **Docker** and **Docker Compose** installed on your machine.
+* A **Telegram Bot Token** (obtained from [@BotFather](https://t.me/BotFather)).
+* A **Telegram User ID** or **Chat ID** where the bot will operate.
+* A **Telegram Topic ID**
 
-```bash
-sudo docker-compose build
-```
+## Installation and Setup
 
-### Setup
+### On a server
 
-* Create a `.env` file. You must include the following lines for the bot to work:
+1. **Clone the repository:**
 
-```bash
-TOKEN="YOUR_BOTS_TOKEN"
-BOT_USERNAME="@YOUR_BOTS_USERNAME"
-CHAT_ID=YOUR_CHATS_ID
-TOPIC_ID=YOUR_TOPICS_ID
-```
+    ```bash
+    git clone [https://github.com/gabrielioanpavel/HAMRadio-Telegram_Bot.git](https://github.com/gabrielioanpavel/HAMRadio-Telegram_Bot.git)
+    cd HAMRadio-Telegram_Bot
+    ```
 
-* Add the filters to `.env`. Note that filters for **POTA** must contain **grids**, while filters for **SOTA**
-must contain **callsigns** that represent a country (ex.: Romania - YO YP YR). For the auto-spot feature use
-specific **callsigns**. Reference:
+2. **Create a `.env` file:**
+    Create a file named `.env` in the root directory and populate it with your configuration. You **must** include the following variables:
 
-```bash
-AUTO_SPOT="CALLSIGN1 CALLSIGN2 CALLSIGN3"
-FILTER_POTA="GRID1 GRID2 GRID3"
-FILTER_SOTA="COUNTRY_CALLSIGN1 COUNTRY_CALLSIGN2"
-```
+    ```env
+    TOKEN="YOUR_BOT_TOKEN_HERE"
+    BOT_USERNAME="@YOUR_BOT_USERNAME"
+    CHAT_ID=YOUR_CHAT_ID
+    TOPIC_ID=YOUR_TOPIC_ID
+    
+    # Auto-spotting configuration
+    AUTO_SPOT="CALLSIGN1 CALLSIGN2 CALLSIGN3"
+    
+    # Default Filters
+    FILTER_POTA="GRID1 GRID2 GRID3" 
+    # Example: FILTER_POTA="KN24 KN25"
+    
+    FILTER_SOTA="COUNTRY_CALLSIGN1 COUNTRY_CALLSIGN2"
+    # Example: FILTER_SOTA="YO YP YR" (Romania)
+    ```
 
-> Note that the bot is made to work in a specific topic only.
+3. **Advanced Filtering (Optional):**
+    You can create custom filters by adding variables like `SOMETHING_POTA` or `SOMETHING_SOTA` to your `.env` file. These can then be used as arguments in commands.
 
-* You may add additional filters for either POTA or SOTA in a similar manner as above. `FILTER_POTA` and `FILTER_SOTA`
-are the default ones. The additional filters will be applied when sent as an argument of a command. Reference:
+    *Example:*
 
-```bash
-EU_POTA="GRIDS_CONTAINING_EUROPE"
-EU_SOTA="CALLSIGNS_OF_EUROPEAN_COUNTRIES"
-```
+    ```env
+    EU_POTA="GRIDS_FOR_EUROPE"
+    EU_SOTA="CALLSIGNS_FOR_EUROPE"
+    ```
 
-> To create a filter, simply add `SOMETHING_POTA` or `SOMETHING_SOTA` to `.env`. The argument passed through the message
-should coincide with **SOMETHING** (i.e. `/get_pota EU` for the above European filter).
+    *Usage:* `/get_pota EU` will use the `EU_POTA` filter.
 
-* Create a bot using BotFather on Telegram.
-* Set the following commands with `/set_commands` :
+4. **Build and Run with Docker:**
 
-```telegram
-/help
-/get_bota
-/get_pota
-/get_sota
-```
+    ```bash
+    sudo docker-compose build
+    sudo docker-compose up -d
+    ```
 
-## Running the bot
+    Logs will be written to the `logs/` directory, timestamped by start date.
 
-Run the following command in the terminal to start the bot:
+### Telegram Configuration
 
-```bash
-sudo docker-compose up -d
-```
+Use **@BotFather** to set the command list for your bot. Send `/setcommands` to BotFather and paste the following:
 
-Logs will be written in `logs/`, marked with a timestamp representing the date when the bot was started.
-
-### Usage
-
-* `/help` - display the available commands.
-* `/get_bota` - get a list of future BOTA activations.
-* `/get_pota` - get the latest information on POTA activations.
-* `/get_sota` - get the latest information on SOTA activations.
-* `/get_wwbota` - get the latest information on WWBOTA activations.
-* `/callsign [CALLSIGN]` - get details about an operator.
-* `/latest` - get the latest added park.
-* You may provide an argument to the `/get_pota` or `/get_sota` commands to represent a certain filter that was created in `.env`.
-
-## Contributing
-
-Pull requests are welcome. For major changes or bugs please open an issue first.
-
-## License
-
-This project is licensed under the [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.en.html) License - see the LICENSE file for details
+```text
+help - Display available commands
+get_bota - Get future BOTA activations
+get_pota - Get latest POTA activations
+get_sota - Get latest SOTA activations
+get_wwbota - Get latest WWBOTA activations
+callsign - Get details about an operator
+latest - Get the latest added park
