@@ -1,7 +1,15 @@
-FROM python:3.11-slim
+FROM python:3.14.0a3-slim
 
-# Disable Python output buffering for real-time logging
+# Disable Python output buffering
 ENV PYTHONUNBUFFERED=1
+
+# 1. Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# 2. Configure uv environment
+ENV UV_PROJECT_ENVIRONMENT="/app/.venv"
+ENV PATH="/app/.venv/bin:$PATH"
+ENV UV_COMPILE_BYTECODE=1
 
 RUN apt-get update && apt-get install -y \
     wget unzip curl gnupg chromium chromium-driver \
@@ -9,10 +17,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 3. Install dependencies (Cached layer)
+COPY pyproject.toml uv.lock ./
 
+RUN uv sync --frozen --no-install-project
+
+# 4. Install project code
 COPY . .
 
-CMD ["sh", "-c", "python3 src/bot.py 2>&1 | tee logs/$(date +%Y-%m-%d_%H-%M-%S).log"]
+RUN uv sync --frozen
 
+CMD ["sh", "-c", "python src/bot.py 2>&1 | tee logs/$(date +%Y-%m-%d_%H-%M-%S).log"]
