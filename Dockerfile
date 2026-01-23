@@ -1,4 +1,4 @@
-FROM python:3.14.0a3-slim
+FROM python:3.11-slim
 
 # Disable Python output buffering
 ENV PYTHONUNBUFFERED=1
