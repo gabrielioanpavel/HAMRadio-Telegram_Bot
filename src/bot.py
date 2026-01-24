@@ -965,14 +965,27 @@ async def auto_spot(app):
 
         if flt and not df.empty:
             flt = flt.split()
+            # 1. Filter by callsign first
             mask = df["callsign"].apply(
                 lambda x: any(activator in x for activator in flt)
             )
             df = df[mask].reset_index(drop=True)
 
+            if not df.empty and "timestamp" in df.columns:
+                df = df.sort_values("timestamp", ascending=True)
+                df = df.drop_duplicates(subset=["callsign"], keep="last")
+
             for index, row in df.iterrows():
                 callsign = row["callsign"]
-                current_freq = row["frequency"]
+
+                try:
+                    raw_freq = float(row["frequency"])
+                    if raw_freq > 200:
+                        current_freq = f"{raw_freq / 1000:.3f}"
+                    else:
+                        current_freq = str(row["frequency"])
+                except ValueError:
+                    current_freq = str(row["frequency"])
 
                 # Check for new spot
                 if callsign not in act_llota:
@@ -1018,6 +1031,7 @@ async def auto_spot(app):
                 try:
                     old_freq_float = float(act_llota[callsign][1])
                     new_freq_float = float(current_freq)
+
                     if abs(old_freq_float - new_freq_float) >= 0.001:
                         act_llota[callsign] = (
                             row["reference"],
